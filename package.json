@@ -2,6 +2,7 @@
   "name": "papier_libere",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://david476.github.io/papier_libere/build/",
   "dependencies": {
     "glfx-es6": "0.0.3",
     "jsqr": "^1.1.0",
