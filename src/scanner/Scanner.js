@@ -47,16 +47,16 @@ class Scanner extends Component {
         var code = jsQR(canvas.getPixelArray(), canvas.width, canvas.height);
         if(code) {
           output.innerText = code.data;
+
+          var lc = code.location, tl = lc.topLeftCorner, tr = lc.topRightCorner, bl = lc.bottomLeftCorner, br = lc.bottomRightCorner;
+
+          canvas.perspective(
+            [tl.x, tl.y, tr.x, tr.y, bl.x, bl.y, br.x, br.y],
+            [0, 0,       200, 0,     0, 200,     200, 200]
+          );
         }else {
           output.innerText = "QR code not found!"
         }
-
-        var lc = code.location, tl = lc.topLeftCorner, tr = lc.topRightCorner, bl = lc.bottomLeftCorner, br = lc.bottomRightCorner;
-
-        canvas.perspective(
-          [tl.x, tl.y, tr.x, tr.y, bl.x, bl.y, br.x, br.y],
-          [0, 0,       200, 0,     0, 200,     200, 200]
-        );
 
         //Finish processing
         canvas.update();
