@@ -7,7 +7,7 @@
 /coverage
 
 # production
-#/build EDITED - USING FOR GITHUB PAGES
+/build
 
 # misc
 .DS_Store
