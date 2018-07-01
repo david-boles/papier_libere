@@ -6,7 +6,7 @@ class Scanner extends Component {
   render() {
     return (
       <div>
-        <h1>Test Version 2</h1>
+        <h1>Test Version 3</h1>
         <p id='output'/>
         <div id='display_container'/>
       </div>
@@ -41,6 +41,7 @@ class Scanner extends Component {
 
         //Do modifications
         canvas.denoise(40);
+        canvas.noise(1);
 
         var code = jsQR(canvas.getPixelArray(), canvas.width, canvas.height);
         if(code) {
@@ -56,18 +57,6 @@ class Scanner extends Component {
       requestAnimationFrame(tick);
     }
 
-    function getPixels(canvas) {
-      let texture = canvas._.texture,
-        gl = texture.gl,
-        size = texture.width * texture.height * 4,
-        pixels = new Uint8Array(size);
-        
-      texture.use();
-      gl.defaultShader.drawRect();
-      gl.readPixels(0, 0, texture.width, texture.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      
-      return pixels;
-    }
   }
 
 }
