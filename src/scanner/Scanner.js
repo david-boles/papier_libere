@@ -6,7 +6,7 @@ class Scanner extends Component {
   render() {
     return (
       <div>
-        <h1>Test Version 0</h1>
+        <h1>Test Version 1</h1>
         <p id='output'/>
         <div id='display_container'/>
       </div>
