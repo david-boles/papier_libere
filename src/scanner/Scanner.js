@@ -6,7 +6,7 @@ class Scanner extends Component {
   render() {
     return (
       <div>
-        <h1>Test Version 4</h1>
+        <h1>Test Version 5</h1>
         <p id='output'/>
         <div id='display_container'/>
       </div>
@@ -37,11 +37,13 @@ class Scanner extends Component {
           texture.loadContentsOf(video);
         }
 
+        //Start processing
         canvas.draw(texture);
 
-        //Do modifications
+        //Filters
         canvas.denoise(40);
 
+        //Detect QR code
         var code = jsQR(canvas.getPixelArray(), canvas.width, canvas.height);
         if(code) {
           output.innerText = code.data;
@@ -49,8 +51,15 @@ class Scanner extends Component {
           output.innerText = "QR code not found!"
         }
 
+        var lc = code.location, tl = lc.topLeftCorner, tr = lc.topRightCorner, bl = lc.bottomLeftCorner, br = lc.bottomRightCorner;
+
+        canvas.perspective(
+          [tl.x, tl.y, tr.x, tr.y, bl.x, bl.y, br.x, br.y],
+          [0, 0,       200, 0,     0, 200,     200, 200]
+        );
+
+        //Finish processing
         canvas.update();
-        // console.log(Object.keys(canvas));
 
       }
       requestAnimationFrame(tick);
