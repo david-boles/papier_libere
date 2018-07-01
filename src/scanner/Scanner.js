@@ -6,7 +6,7 @@ class Scanner extends Component {
   render() {
     return (
       <div>
-        <h1>Test Version 1</h1>
+        <h1>Test Version 2</h1>
         <p id='output'/>
         <div id='display_container'/>
       </div>
@@ -42,7 +42,7 @@ class Scanner extends Component {
         //Do modifications
         canvas.denoise(40);
 
-        var code = jsQR(getPixels(canvas), canvas.width, canvas.height);
+        var code = jsQR(canvas.getPixelArray(), canvas.width, canvas.height);
         if(code) {
           output.innerText = code.data;
         }else {
