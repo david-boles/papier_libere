@@ -1,22 +1,16 @@
 {
   "name": "papier_libere",
-  "version": "0.0.0",
-  "description": "Playing around...",
-  "main": "index.js",
-  "scripts": {
-    "start": "node ./index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/david476/papier_libere.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/david476/papier_libere/issues"
-  },
-  "homepage": "https://github.com/david476/papier_libere#readme",
+  "version": "0.1.0",
+  "private": true,
   "dependencies": {
-    "caman": "^4.1.2"
+    "react": "^16.4.1",
+    "react-dom": "^16.4.1",
+    "react-scripts": "1.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
   }
 }
