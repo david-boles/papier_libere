@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-import Scanner from './scanner/Scanner';
+import Importer from './import/Importer';
 
 class App extends Component {
   render() {
     return (
-      <Scanner/>
+      <Importer/>
     );
   }
 }
