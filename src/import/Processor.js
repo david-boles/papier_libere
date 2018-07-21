@@ -17,8 +17,12 @@ class Processor extends Component {
       switch (e.data[0]) {
         case 'stage':
           this.setState({stage: e.data[1]});
-          if(e.data[1] === 'qr') {
-            this.setMessage('Reading QR code...');
+          switch(e.data[1]) {
+            case 'qr':
+              this.setMessage('Finding QR code...');
+              break;
+            case 'edge':
+              this.setMessage('Detecting edges...');
           }
           break;
         case 'error':
