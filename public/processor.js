@@ -1,6 +1,8 @@
 //Webworker that processes images
 importScripts('https://unpkg.com/jimp@0.2.27/browser/lib/jimp.min.js');
 importScripts('/jsQR.js');
+// importScripts('https://unpkg.com/@zxing/library@^0.7.0/umd/index.min.js');
+importScripts('/ZXing.js');
 
 onmessage = (e) => {
   switch (e.data[0]) {
@@ -13,8 +15,8 @@ onmessage = (e) => {
 function start(buffer) {
   Jimp.read(buffer).then(image => {
     postMessage(['display', image]);
-    //qrStage(image);
-    edgeStage(image);
+    qrStage(image);
+    //edgeStage(image);
 
   }).catch((e) => {
     postMessage(['error', 'read', e]);
@@ -24,12 +26,86 @@ function start(buffer) {
 
 
 function qrStage(image) {
-  postMessage(['stage', 'qr']);
-  var qr = jsQR(image.bitmap.data, image.bitmap.width, image.bitmap.height);
-  if(qr) {
-    postMessage(['qr', qr]);
-  }else {
-    postMessage(['error', 'qr', 'No QR code was detected!']);
+  try {
+    postMessage(['stage', 'qr']);
+    // var qr = jsQR(image.bitmap.data, image.bitmap.width, image.bitmap.height);
+    // if(qr) {
+    //   postMessage(['qr', qr]);
+    // }else {
+    //   postMessage(['error', 'qr', 'No QR code was detected!']);
+    // }
+    postMessage(['display', image]);
+    console.log('Creating luminance source...');
+    var luminanceSource = new ZXing.ImageDataLuminanceSource(image.bitmap.data, image.bitmap.width, image.bitmap.height);
+    console.log('Creating binary bitmap...');
+    var binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+
+    console.log('Decoding...');
+    var qr = jsQR(image.bitmap.data, image.bitmap.width, image.bitmap.height);
+    if(qr) console.log('jsQR');
+    else console.error('jsQR');
+    try {
+      (new ZXing.QRCodeReader()).decode(binaryBitmap);
+      console.log('ZXing');
+
+    }catch(e) {console.error('ZXing');}
+    try {
+      (new ZXing.QRCodeReader()).decode(binaryBitmap, new Map([[3, true]]));
+      console.log('ZXing+');
+
+    }catch(e) {console.error('ZXing+');}
+
+    console.log('\nresizing...');
+    var modified = image.clone().resize(image.bitmap.width/3.5, Jimp.AUTO);
+    postMessage(['display', modified]);
+    console.log('Creating luminance source...');
+    luminanceSource = new ZXing.ImageDataLuminanceSource(modified.bitmap.data, modified.bitmap.width, modified.bitmap.height);
+    console.log('Creating binary bitmap...');
+    binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+
+    console.log('Decoding...');
+    qr = jsQR(modified.bitmap.data, modified.bitmap.width, modified.bitmap.height);
+    if(qr) console.log('jsQR');
+    else console.error('jsQR');
+    try {
+      (new ZXing.QRCodeReader()).decode(binaryBitmap);
+      console.log('ZXing');
+
+    }catch(e) {console.error('ZXing');}
+    try {
+      (new ZXing.QRCodeReader()).decode(binaryBitmap, new Map([[3, true]]));
+      console.log('ZXing+');
+
+    }catch(e) {console.error('ZXing+');}
+
+    // console.log('\ncropping...');
+    // modified = image.clone().crop(50, 50, 100, 100);
+    // postMessage(['display', modified]);
+    // console.log('Creating luminance source...');
+    // luminanceSource = new ZXing.ImageDataLuminanceSource(modified.bitmap.data, modified.bitmap.width, modified.bitmap.height);
+    // console.log('Creating binary bitmap...');
+    // binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+    // console.log('Decoding...');
+    // qr = jsQR(modified.bitmap.data, modified.bitmap.width, modified.bitmap.height);
+    // if(qr) console.log('jsQR');
+    // else console.error('jsQR');
+    // try {
+    //   (new ZXing.QRCodeReader()).decode(binaryBitmap);
+    //   console.log('ZXing');
+
+    // }catch(e) {console.error('ZXing');}
+    // try {
+    //   (new ZXing.QRCodeReader()).decode(binaryBitmap, new Map([[3, true]]));
+    //   console.log('ZXing+');
+
+    // }catch(e) {console.error('ZXing+');}
+
+
+    postMessage(['stage', 'done']);
+  }catch (error) {
+    console.error(error);
+    console.log(error.name);
+    console.log(error.message);
   }
 }
 
@@ -83,6 +159,17 @@ const horizEdgeKernel = (()=>{
   return kernel;
 })()
 
+const wonkyKernel = (() => {
+  var kernel = [-1, -1, -1,
+                 1,  1, -1,
+                 1,  1, -1];
+  var maxOutput = 0;
+  kernel.forEach(scalar => maxOutput += Math.abs(scalar * 255));
+  maxOutput = maxOutput/2;
+
+  return kernel.map(scalar => scalar / maxOutput);
+})
+
 function colorDistance(c1, c2) {
   var r = (c1[0] + c2[0])/2;
   var deltaR = c1[0]-c2[0];
@@ -93,61 +180,65 @@ function colorDistance(c1, c2) {
 }
 
 function edgeStage(image) {
+  
   postMessage(['stage', 'edge']);
-  const grayscale = [];
-  for(i = 0; i < image.bitmap.data.length; i+=4) {
-    grayscale.push(colorDistance(image.bitmap.data.slice(i, i+3), [255, 255, 255]));
-  }
+  postMessage(['display', image.resize(1200, Jimp.AUTO).greyscale()]);
+  qrStage(image);
 
-  console.log('done grayscaling');
+  // const grayscale = [];
+  // for(i = 0; i < image.bitmap.data.length; i+=4) {
+  //   grayscale.push(colorDistance(image.bitmap.data.slice(i, i+3), [255, 255, 255]));
+  // }
 
-  const horizConvoluted = grayscale.map((value, index) => {
-    const x = index % image.bitmap.width;
-    const y = Math.floor(index / image.bitmap.width);
+  // console.log('done grayscaling');
 
-    var val = 0;
-    for(var kX = 0; kX < edgeKernelDimension; kX++) {
-      for(var kY = 0; kY < edgeKernelDimension; kY++) {
-        val += horizEdgeKernel[(kY*edgeKernelDimension) + kX] * grayscale[(((y + (kY-edgeKernelFlrHalfDim)) % image.bitmap.height) * image.bitmap.width) + ((x + (kX-edgeKernelFlrHalfDim)) % image.bitmap.width)]
-      }
-    }
-    return val;
-  });
+  // // const horizConvoluted = grayscale.map((value, index) => {
+  // //   const x = index % image.bitmap.width;
+  // //   const y = Math.floor(index / image.bitmap.width);
 
-  console.log('convoluted horiz');
+  // //   var val = 0;
+  // //   for(var kX = 0; kX < edgeKernelDimension; kX++) {
+  // //     for(var kY = 0; kY < edgeKernelDimension; kY++) {
+  // //       val += horizEdgeKernel[(kY*edgeKernelDimension) + kX] * grayscale[(((y + (kY-edgeKernelFlrHalfDim)) % image.bitmap.height) * image.bitmap.width) + ((x + (kX-edgeKernelFlrHalfDim)) % image.bitmap.width)]
+  // //     }
+  // //   }
+  // //   return val;
+  // // });
 
-  const vertConvoluted = grayscale.map((value, index) => {
-    const x = index % image.bitmap.width;
-    const y = Math.floor(index / image.bitmap.width);
+  // // console.log('convoluted horiz');
 
-    var val = 0;
-    for(var kX = 0; kX < edgeKernelDimension; kX++) {
-      for(var kY = 0; kY < edgeKernelDimension; kY++) {
-        val += vertEdgeKernel[(kY*edgeKernelDimension) + kX] * grayscale[(((y + (kY-edgeKernelFlrHalfDim)) % image.bitmap.height) * image.bitmap.width) + ((x + (kX-edgeKernelFlrHalfDim)) % image.bitmap.width)]
-      }
-    }
-    return val;
-  });
+  // const vertConvoluted = grayscale.map((value, index) => {
+  //   const x = index % image.bitmap.width;
+  //   const y = Math.floor(index / image.bitmap.width);
 
-  console.log('done convoluting');
+  //   var val = 0;
+  //   for(var kX = 0; kX < edgeKernelDimension; kX++) {
+  //     for(var kY = 0; kY < edgeKernelDimension; kY++) {
+  //       val += vertEdgeKernel[(kY*edgeKernelDimension) + kX] * grayscale[(((y + (kY-edgeKernelFlrHalfDim)) % image.bitmap.height) * image.bitmap.width) + ((x + (kX-edgeKernelFlrHalfDim)) % image.bitmap.width)]
+  //     }
+  //   }
+  //   return val;
+  // });
 
-  new Jimp(image.bitmap.width, image.bitmap.height, (err, outImage) => {//will need to use different dimensions
-    outImage.scan(0, 0, outImage.bitmap.width, outImage.bitmap.height, (x, y, idx) => {
-      var val = Math.sqrt(Math.pow(horizConvoluted[idx/4], 2) + Math.pow(vertConvoluted[idx/4], 2)) * 255;
-      // var val = (vertConvoluted[idx/4] + 1) * 127.5;
+  // console.log('done convoluting');
 
-      if(x === 0 && y % 100 === 0) console.log(val);
+  // new Jimp(image.bitmap.width, image.bitmap.height, (err, outImage) => {//will need to use different dimensions
+  //   outImage.scan(0, 0, outImage.bitmap.width, outImage.bitmap.height, (x, y, idx) => {
+  //     //var val = Math.sqrt(Math.pow(horizConvoluted[idx/4], 2) + Math.pow(vertConvoluted[idx/4], 2)) * 255;
+  //      var val = (vertConvoluted[idx/4] + 1) * 127.5;
 
-      outImage.bitmap.data[idx + 0] = val;
-      outImage.bitmap.data[idx + 1] = val;
-      outImage.bitmap.data[idx + 2] = val;
-      outImage.bitmap.data[idx + 3] = 255;
+  //     if(x === 0 && y % 100 === 0) console.log(val);
 
-      if(x === outImage.bitmap.width-1 && y === outImage.bitmap.height-1) {
-        postMessage(['display', outImage]);
-        postMessage(['stage', 'done']);
-      }
-    });
+  //     outImage.bitmap.data[idx + 0] = val;
+  //     outImage.bitmap.data[idx + 1] = val;
+  //     outImage.bitmap.data[idx + 2] = val;
+  //     outImage.bitmap.data[idx + 3] = 255;
 
-  });
+  //     if(x === outImage.bitmap.width-1 && y === outImage.bitmap.height-1) {
+  //       //postMessage(['display', outImage]);
+  //       postMessage(['stage', 'done']);
+  //     }
+  //   });
+
+  // });
 }
