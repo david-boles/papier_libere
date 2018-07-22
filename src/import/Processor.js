@@ -1,7 +1,4 @@
 import React, { Component } from 'react';
-import Jimp from 'jimp';
-import arrayBufferToBuffer from 'arraybuffer-to-buffer';
-import jsQR from 'jsqr';
 
 class Processor extends Component {
   constructor(props) {
@@ -23,6 +20,15 @@ class Processor extends Component {
               break;
             case 'edge':
               this.setMessage('Detecting edges...');
+              break;
+            case 'perspective':
+              this.setMessage('Correcting for perspective...')
+              break;
+            case 'done':
+              this.setMessage('Image processing complete!');
+              break;
+            default:
+              this.setMessage('');
           }
           break;
         case 'error':
@@ -34,6 +40,7 @@ class Processor extends Component {
           break;
         case 'qr':
           this.setMessage(`QR code found: ${e.data[1].data} @ ${JSON.stringify(e.data[1].location.topRightCorner)}`);
+          break;
         default:
           console.error(e.data);
           //TODO?
