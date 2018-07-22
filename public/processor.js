@@ -3,6 +3,9 @@ importScripts('https://unpkg.com/jimp@0.2.27/browser/lib/jimp.min.js');
 importScripts('/jsQR.js');
 importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-transform.min.js');
 
+
+
+
 onmessage = (e) => {
   switch (e.data[0]) {
     case 'start':
@@ -10,6 +13,8 @@ onmessage = (e) => {
       break;
   }
 }
+
+
 
 function start(buffer) {
   Jimp.read(buffer).then(image => {
@@ -48,12 +53,14 @@ function qrStage(image) {
 
       postMessage(['qr', qr]);
       qrPerspectiveStage(image, qr);
-      
+
     }else {
       postMessage(['error', 'qr', 'No QR code was detected!']);
     }
   }
 }
+
+
 
 const qrPerpPPI = 50;
 const qrPerspBorder = 250;
@@ -84,6 +91,8 @@ function qrPerspectiveStage(image, qr) {
   postMessage(['display', output]);
   cornersStage(image, qr, perspT, output);
 }
+
+
 
 function cornersStage(image, qr, imgToQRTrans, qrPerspImage) {
   postMessage(['stage', 'corners']);
@@ -147,7 +156,9 @@ function cornersStage(image, qr, imgToQRTrans, qrPerspImage) {
   finalPserpectiveStage(image, corners)
 }
 
-const finalPerspPPI = 200;
+
+
+const finalPerspPPI = 400;
 
 function finalPserpectiveStage(image, corners) {
   postMessage(['stage', 'corners']);
@@ -175,6 +186,8 @@ function finalPserpectiveStage(image, corners) {
 
   postMessage(['stage', 'done', output]);
 }
+
+
 
 //UTILS
 function colorDistance(c1, c2) {
