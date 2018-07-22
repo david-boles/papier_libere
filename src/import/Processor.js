@@ -22,10 +22,13 @@ class Processor extends Component {
               this.setMessage('Detecting edges...');
               break;
             case 'qr_perspective':
-              this.setMessage('Doing initial perspective transform...')
+              this.setMessage('Roughly correcting perspective...')
               break;
             case 'corners':
               this.setMessage('Detecting corners...')
+              break;
+            case 'final_perspective':
+              this.setMessage('Generating final image...');
               break;
             case 'done':
               this.setMessage('Image processing complete!');

@@ -153,15 +153,15 @@ function cornersStage(image, qr, imgToQRTrans, qrPerspImage) {
   }
 
   postMessage(['display', cornersImage]);
-  finalPserpectiveStage(image, corners)
+  finalPerspectiveStage(image, corners)
 }
 
 
 
 const finalPerspPPI = 400;
 
-function finalPserpectiveStage(image, corners) {
-  postMessage(['stage', 'corners']);
+function finalPerspectiveStage(image, corners) {
+  postMessage(['stage', 'final_perspective']);
 
   const perspT = PerspT([corners.tl.x, corners.tl.y,
                          corners.tr.x, corners.tr.y,
