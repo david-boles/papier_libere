@@ -21,11 +21,15 @@ class Processor extends Component {
             case 'edge':
               this.setMessage('Detecting edges...');
               break;
-            case 'perspective':
-              this.setMessage('Correcting for perspective...')
+            case 'qr_perspective':
+              this.setMessage('Doing initial perspective transform...')
+              break;
+            case 'corners':
+              this.setMessage('Detecting corners...')
               break;
             case 'done':
               this.setMessage('Image processing complete!');
+              this.displayJIMPImage(e.data[2]);
               break;
             default:
               this.setMessage('');
@@ -40,6 +44,7 @@ class Processor extends Component {
           break;
         case 'qr':
           this.setMessage(`QR code found: ${e.data[1].data} @ ${JSON.stringify(e.data[1].location.topRightCorner)}`);
+          console.log(e.data[1]);
           break;
         default:
           console.error(e.data);
