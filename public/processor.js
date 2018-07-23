@@ -99,7 +99,8 @@ function cornersStage(image, qr, imgToQRTrans, qrPerspImage) {
 
   var cornersImage = qrPerspImage.clone();
   cornersImage.scan(0, 0, cornersImage.bitmap.width, cornersImage.bitmap.height, (x, y, idx) => {
-    var dist = colorDistance(cornersImage.bitmap.data.slice(idx, idx+3), qr.colors.background);
+    const background = qr.colors.background
+    const dist = colorDistance(cornersImage.bitmap.data.slice(idx, idx+3), [background.r, background.g, background.b]);
     cornersImage.bitmap.data[idx + 0] = dist;
     cornersImage.bitmap.data[idx + 1] = 0;
     cornersImage.bitmap.data[idx + 2] = 0;
@@ -108,7 +109,7 @@ function cornersStage(image, qr, imgToQRTrans, qrPerspImage) {
 
   postMessage(['display', cornersImage]);
   
-  var queue = [];
+  const queue = [];
   const tryQueuing = (x, y) => {
     const idx = getJimpPixelIndex(x, y, cornersImage);
     if(cornersImage.bitmap.data[idx] < 75 && !cornersImage.bitmap.data[idx+1]) {
