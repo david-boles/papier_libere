@@ -154,15 +154,19 @@ function cornersStage(image, qr, imgToQRTrans, qrPerspImage) {
   }
 
   postMessage(['display', cornersImage]);
-  finalPerspectiveStage(image, corners)
+  finalPerspectiveStage(image, qr, corners)
 }
 
 
 
 const finalPerspPPI = 400;
 
-function finalPerspectiveStage(image, corners) {
+function finalPerspectiveStage(image, qr, corners) {
   postMessage(['stage', 'final_perspective']);
+
+  const redBal = 200 / qr.colors.background.r;
+  const greenBal = 200 / qr.colors.background.g;//TODO maybe find brightest pixel on scaled down version?
+  const blueBal = 200 / qr.colors.background.b;
 
   const perspT = PerspT([corners.tl.x, corners.tl.y,
                          corners.tr.x, corners.tr.y,
@@ -179,10 +183,10 @@ function finalPerspectiveStage(image, corners) {
     const inputPixel = perspT.transformInverse(x, y);
     const iidx = getJimpPixelIndex(inputPixel[0], inputPixel[1], image);
 
-    output.bitmap.data[idx + 0] = image.bitmap.data[iidx + 0];
-    output.bitmap.data[idx + 1] = image.bitmap.data[iidx + 1];
-    output.bitmap.data[idx + 2] = image.bitmap.data[iidx + 2];
-    output.bitmap.data[idx + 3] = image.bitmap.data[iidx + 3];
+    output.bitmap.data[idx + 0] = clamp(image.bitmap.data[iidx + 0] * redBal, 0, 255);
+    output.bitmap.data[idx + 1] = clamp(image.bitmap.data[iidx + 1] * greenBal, 0, 255);
+    output.bitmap.data[idx + 2] = clamp(image.bitmap.data[iidx + 2] * blueBal, 0, 255);
+    output.bitmap.data[idx + 3] = 255;
   }); 
 
   postMessage(['stage', 'done', output]);
