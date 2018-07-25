@@ -11,10 +11,11 @@ const PPI = 72;
 //CONFIG
 const pageWidth = 612;
 const pageHeight = 792;
-const pageStart = 1;//What page index to start on, should be odd.
+const pageStart = 99;//What page index to start on, should be odd.
 const pageCount = 2;//Should be even (actual sheets of paper is half this).
 const newPageOpts = {margin: 0}
 const pageNumColor = '#c0c0c0';
+const coverTemplate = fs.readFileSync('./assets/cover.svg').toString();
 const leftBindingTemplate = fs.readFileSync('./assets/page-dot_grid-left_binding.svg').toString();
 const rightBindingTemplate = fs.readFileSync('./assets/page-dot_grid-right_binding.svg').toString();
 
@@ -37,15 +38,16 @@ function contentPage(index) {
     height: pageHeight
   });
   notebook.image(qr.imageSync(`1 LTR ${index-1}`, { margin: 0, size: 20 }), (bindingLeft ? 7.375 : 7)*PPI, 9.875*PPI, {width: 0.75*PPI, height: 0.75*PPI});
-  notebook.fillColor(pageNumColor).text(index, (bindingLeft ? 0.5 : 0.125)*PPI, pageHeight - (PPI/3) - (0.18*PPI), {
-    width: 0.57*PPI,
-    align: 'center'
-  });
+  notebook.rect((bindingLeft ? 0.5 : 0.125)*PPI, 10.475*PPI, 16+(Math.ceil((notebook.widthOfString(index.toString()))/14.1732288)*14.1732288), 0.4*PPI).fill('white');
+  notebook.fillColor(pageNumColor).text(index, (bindingLeft ? 0.5 : 0.125)*PPI + (0.18*PPI), pageHeight - (PPI/3) - (0.18*PPI));
 }
 
 function frontCover() {
   notebook.addPage(newPageOpts);
-  notebook.text('Outside front');
+  notebook.addSVG(coverTemplate, 0, 0, {
+    width: pageWidth,
+    height: pageHeight
+  });
   notebook.addPage(newPageOpts);
   notebook.text('Inside front');
 }
@@ -54,7 +56,10 @@ function backCover() {
   notebook.addPage(newPageOpts);
   notebook.text('Inside back');
   notebook.addPage(newPageOpts);
-  notebook.text('Outside back');  
+  notebook.addSVG(coverTemplate, 0, 0, {
+    width: pageWidth,
+    height: pageHeight
+  }); 
 }
 
 //FINALIZE + END STREAM
