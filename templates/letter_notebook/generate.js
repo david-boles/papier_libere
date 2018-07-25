@@ -1,52 +1,61 @@
-const pdf = require('pdfjs');
+const PDFDocument = require('pdfkit');
+const SVGtoPDF = require('svg-to-pdfkit');
 const fs = require('fs');
+const qr = require('qr-image');
+PDFDocument.prototype.addSVG = function(svg, x, y, options) {
+  return SVGtoPDF(this, svg, x, y, options), this;
+};
 
 const PPI = 72;
 
 //CONFIG
 const pageWidth = 612;
 const pageHeight = 792;
-const contentPages = 100;//Actual sheets of paper is half this.
-const bindingMargin = 0.375 * PPI;
-const contentPageTemplate = new pdf.Image(fs.readFileSync('./assets/page-dot_grid-1.pdf'));
+const pageStart = 1;//What page index to start on, should be odd.
+const pageCount = 2;//Should be even (actual sheets of paper is half this).
+const newPageOpts = {margin: 0}
+const pageNumColor = '#c0c0c0';
+const leftBindingTemplate = fs.readFileSync('./assets/page-dot_grid-left_binding.svg').toString();
+const rightBindingTemplate = fs.readFileSync('./assets/page-dot_grid-right_binding.svg').toString();
 
-const notebook = new pdf.Document({
-  width: pageWidth,
-  height: pageHeight,
-  padding: 0,
-});
+//Generate
+const notebook = new PDFDocument({autoFirstPage: false});
+notebook.pipe(fs.createWriteStream('./notebook.pdf'));
 
-//GENERATE
 frontCover();
-for(var i = 1; i <= contentPages; i++) {
+notebook.fontSize(PPI/3);
+for(var i = pageStart; i < pageStart+pageCount; i++) {
   contentPage(i);
 }
 backCover();
 
-//SAVE
-notebook.asBuffer((err, data) => {
-  if (err) {
-    console.error(err)
-  } else {
-    fs.writeFileSync('notebook.pdf', data, { encoding: 'binary' })
-  }
-})
-
 function contentPage(index) {
   const bindingLeft = !!(index % 2);
-  notebook.pageBreak();
-  //notebook.text(`Content page: ${index}, binding: ${bindingLeft ? 'left' : 'right'}`);
-  //notebook.image(contentPageTemplate);
+  notebook.addPage(newPageOpts);
+  notebook.addSVG(bindingLeft ? leftBindingTemplate : rightBindingTemplate, 0, 0, {
+    width: pageWidth,
+    height: pageHeight
+  });
+  notebook.image(qr.imageSync(`1 LTR ${index-1}`, { margin: 0, size: 20 }), (bindingLeft ? 7.375 : 7)*PPI, 9.875*PPI, {width: 0.75*PPI, height: 0.75*PPI});
+  notebook.fillColor(pageNumColor).text(index, (bindingLeft ? 0.5 : 0.125)*PPI, pageHeight - (PPI/3) - (0.18*PPI), {
+    width: 0.57*PPI,
+    align: 'center'
+  });
 }
 
 function frontCover() {
-  notebook.text('Outside Front Cover');
-  notebook.pageBreak();
-  notebook.text('Inside Front Cover');
+  notebook.addPage(newPageOpts);
+  notebook.text('Outside front');
+  notebook.addPage(newPageOpts);
+  notebook.text('Inside front');
 }
 
 function backCover() {
-  notebook.text('Inside Back Cover');
-  notebook.pageBreak();
-  notebook.text('Outside Back Cover');
+  notebook.addPage(newPageOpts);
+  notebook.text('Inside back');
+  notebook.addPage(newPageOpts);
+  notebook.text('Outside back');  
 }
+
+//FINALIZE + END STREAM
+notebook.end();
