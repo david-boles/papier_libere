@@ -5,8 +5,9 @@ import Fade from '@material-ui/core/Fade';
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
-import React, { Component } from 'react';
 import firebase from 'firebase';
+import React, { Component } from 'react';
+import Importer from './import/Importer';
 import LandingPage from './LandingPage';
 
 const fbConfig = {
@@ -86,6 +87,7 @@ class App extends Component {
       if (user) {
         this.setState({auth: user});
         console.log('Logged in!');
+        this.setView(<Importer/>);
       } else {
         this.setState({auth: false});
         console.log('Logged out :(');
@@ -114,19 +116,19 @@ class App extends Component {
 
   initiateLogIn() {
     fbAuth.signInWithPopup(googleAuthProvider).then(result => {
-      // This gives you a Google Access Token. You can use it to access the Google API.
-      var token = result.credential.accessToken;
-      // The signed-in user info.
-      var user = result.user;
-      // ...
+      // // This gives you a Google Access Token. You can use it to access the Google API.
+      // var token = result.credential.accessToken;
+      // // The signed-in user info.
+      // var user = result.user;
+      // // ...
     }).catch(function(error) {
-      // Handle Errors here.
-      var errorCode = error.code;
-      var errorMessage = error.message;
-      // The email of the user's account used.
-      var email = error.email;
-      // The firebase.auth.AuthCredential type that was used.
-      var credential = error.credential;
+      // // Handle Errors here.
+      // var errorCode = error.code;
+      // var errorMessage = error.message;
+      // // The email of the user's account used.
+      // var email = error.email;
+      // // The firebase.auth.AuthCredential type that was used.
+      // var credential = error.credential;
       // ...
     });
   }
