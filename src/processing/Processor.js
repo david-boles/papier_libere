@@ -58,6 +58,12 @@ class Processor extends Component {
       }
     });
   }
+
+  componentDidMount() {
+    setTimeout(()=>{
+      this.setView(<Importer/>);
+    }, 5000);
+  }
 }
 
 export default Processor;
