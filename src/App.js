@@ -51,7 +51,7 @@ class App extends Component {
     return (
       <MuiThemeProvider theme={theme}>
         <CssBaseline />
-        <AppBar>
+        <AppBar style={{maxWidth: '100vw'}}>
           <Toolbar variant="dense">
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
               Papier Libéré
