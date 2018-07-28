@@ -7,7 +7,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import firebase from 'firebase';
 import React, { Component } from 'react';
-import Importer from './import/Importer';
+import Processor from './processing/Processor';
 import LandingPage from './LandingPage';
 
 const fbConfig = {
@@ -42,9 +42,8 @@ class App extends Component {
     super(props);
     this.state = {
       current: null,
-      next: null,
-      isTransitioning: false,
-      auth: null
+      next: null
+      //auth: undefined, false, 'error', or object (actually logged in)
     }
   }
 
@@ -58,18 +57,16 @@ class App extends Component {
               Papier Libéré
             </Typography>
             {
-              this.state.auth === false?
+              this.state.auth === false || this.state.auth === 'error'?
                 <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogIn()}}>
-                  log in
+                  {this.state.auth === 'error' ? 'try again' : 'log in'}
                 </Button>
-              : null
-            }
-            {
-              this.state.auth?
-                <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogOut()}}>
-                  log out
-                </Button>
-              : null
+              : 
+                this.state.auth?
+                  <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogOut()}}>
+                    log out
+                  </Button>
+                : null
             }  
           </Toolbar>
         </AppBar>
@@ -87,7 +84,7 @@ class App extends Component {
       if (user) {
         this.setState({auth: user});
         console.log('Logged in!');
-        this.setView(<Importer/>);
+        this.setView(<Processor auth={this.state.auth}/>);
       } else {
         this.setState({auth: false});
         console.log('Logged out :(');
@@ -97,7 +94,7 @@ class App extends Component {
   }
 
   setView(component) {
-    const wasTransitioning = this.state.isTransitioning;
+    const wasTransitioning = !!this.state.next;
 
     this.setState({
       next: component,
@@ -121,15 +118,8 @@ class App extends Component {
       // // The signed-in user info.
       // var user = result.user;
       // // ...
-    }).catch(function(error) {
-      // // Handle Errors here.
-      // var errorCode = error.code;
-      // var errorMessage = error.message;
-      // // The email of the user's account used.
-      // var email = error.email;
-      // // The firebase.auth.AuthCredential type that was used.
-      // var credential = error.credential;
-      // ...
+    }).catch((error) => {
+      this.setState({auth: 'error'});
     });
   }
 
