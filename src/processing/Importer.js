@@ -27,7 +27,7 @@ class Importer extends Component {
 
           <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
             <Card>
-              <img src="/scanned.png" style={{width: 'auto', minWidth: '100%', maxWidth: '100%', maxHeight: '60vh'}}/>
+              <img src="/scanned.png" style={{width: 'auto', minWidth: '100%', maxWidth: '100%', maxHeight: '50vh'}}/>
               <CardActions>
                 <Button color="primary">
                   Override Detection
@@ -41,7 +41,7 @@ class Importer extends Component {
 
           <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
             <Card>
-              <img src="/landscape.jpg" style={{width: 'auto', minWidth: '100%', maxWidth: '100%', maxHeight: '60vh'}}/>
+              <img src="/landscape.jpg" style={{width: 'auto', minWidth: '100%', maxWidth: '100%', maxHeight: '50vh'}}/>
               <CardActions>
                 <Button color="primary">
                   Override Detection
@@ -55,7 +55,7 @@ class Importer extends Component {
 
           <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
             <Card>
-              <img src="/small.png" style={{width: 'auto', minWidth: '100%', maxWidth: '100%', maxHeight: '60vh'}}/>
+              <img src="/small.png" style={{width: 'auto', minWidth: '100%', maxWidth: '100%', maxHeight: '50vh'}}/>
               <CardActions>
                 <Button color="primary">
                   Override Detection
