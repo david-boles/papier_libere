@@ -14,7 +14,7 @@ const doubleBleedMargin = 2*bleedMargin;
 const pageWidth = 612 + doubleBleedMargin;
 const pageHeight = 792 + doubleBleedMargin;
 const pageStart = 1;//What page index to start on, should be odd.
-const pageCount = 100;//Should be even (actual sheets of paper is half this).
+const pageCount = 2;//Should be even (actual sheets of paper is half this).
 const newPageOpts = {size: [pageWidth, pageHeight],margin: 0}
 const insideCoverColor = '#404040';
 const pageNumColor = '#c0c0c0';
@@ -40,7 +40,7 @@ function contentPage(index) {
     width: pageWidth,
     height: pageHeight
   });
-  notebook.image(qr.imageSync(`1 LTR ${index}`, { margin: 0, size: 20 }), bleedMargin + ((bindingLeft ? 7.375 : 7)*PPI), (9.875*PPI)+bleedMargin, {width: 0.75*PPI, height: 0.75*PPI});
+  notebook.image(qr.imageSync(`1 ${index}`, { ec_level: 'H', margin: 0, size: 20 }), bleedMargin + ((bindingLeft ? 7.375 : 7)*PPI), (9.875*PPI)+bleedMargin, {width: 0.75*PPI, height: 0.75*PPI});
   notebook.rect(bleedMargin+((bindingLeft ? 0.5 : 0.125)*PPI)+6, (10.475*PPI)+bleedMargin, 10+(Math.ceil((notebook.widthOfString(index.toString()))/14.1732288)*14.1732288), 24).fill('white');
   notebook.fillColor(pageNumColor).text(index, (bindingLeft ? 0.5 : 0.125)*PPI + (0.18*PPI) + bleedMargin, pageHeight - (PPI/3) - (0.18*PPI) - bleedMargin);
 }
