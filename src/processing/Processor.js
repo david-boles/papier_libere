@@ -24,7 +24,7 @@ class Processor extends Component {
           </div>
         </Slide>
         <Slide in={this.state.nextSlideIn} timeout={slideTimeout} direction={'left'}>
-          <div style={{position: 'absolute', top: 48, width: '100vw', height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
+          <div style={{position: 'absolute', top: 48, width: this.state.nextSlideIn ? '100vw' : 0, height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
             {this.state.next}
           </div>
         </Slide>
