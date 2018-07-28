@@ -54,7 +54,7 @@ class App extends Component {
         <AppBar style={{left: 0, maxWidth: '100vw'}}>
           <Toolbar variant="dense">
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
-              Papier Libéré - v0.0.5
+              Papier Libéré - v0.0.6
             </Typography>
             {
               this.state.auth === false || this.state.auth === 'error'?
