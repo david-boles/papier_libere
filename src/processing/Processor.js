@@ -19,7 +19,7 @@ class Processor extends Component {
     return (
       <React.Fragment>
         <Slide in={this.state.currentSlideIn} timeout={slideTimeout} direction='right' appear={false}>
-          <div style={{position: 'absolute', top: 48, width: '100vw', height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
+          <div style={{position: 'absolute', top: 48, width: this.state.nextSlideIn ? 0 : '100vw', height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
             {this.state.current}
           </div>
         </Slide>
