@@ -51,10 +51,10 @@ class App extends Component {
     return (
       <MuiThemeProvider theme={theme}>
         <CssBaseline />
-        <AppBar style={{left: 0, maxWidth: '100vw'}}>
+        <AppBar>
           <Toolbar variant="dense">
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
-              Papier Libéré - v0.0.6
+              Papier Libéré - v0.0.7
             </Typography>
             {
               this.state.auth === false || this.state.auth === 'error'?
