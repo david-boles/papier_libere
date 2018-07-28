@@ -1,6 +1,6 @@
 import Slide from '@material-ui/core/Slide';
 import React, { Component } from 'react';
-import Importer from '../import/Importer';
+import Importer from './Importer';
 
 const slideTimeout = 250;
 
@@ -19,23 +19,17 @@ class Processor extends Component {
     return (
       <React.Fragment>
         <Slide in={this.state.currentSlideIn} timeout={slideTimeout} direction='right' appear={false}>
-          <div style={{position: 'absolute', top: 48, width: '100vw'}}>
+          <div style={{position: 'absolute', top: 48, width: '100vw', height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
             {this.state.current}
           </div>
         </Slide>
         <Slide in={this.state.nextSlideIn} timeout={slideTimeout} direction={'left'}>
-          <div style={{position: 'absolute', top: 48, width: '100vw'}}>
+          <div style={{position: 'absolute', top: 48, width: '100vw', height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
             {this.state.next}
           </div>
         </Slide>
       </React.Fragment>
     );
-  }
-
-  componentDidMount() {
-    // this.setView(
-    //   <Importer/>
-    // );
   }
 
   setView(component) {
