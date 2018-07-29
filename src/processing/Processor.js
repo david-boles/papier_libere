@@ -56,12 +56,6 @@ class Processor extends Component {
       }, slideTimeout);
     });
   }
-
-  componentDidMount() {
-    setTimeout(()=>{
-      this.setView(<Importer/>);
-    }, 5000);
-  }
 }
 
 export default Processor;
