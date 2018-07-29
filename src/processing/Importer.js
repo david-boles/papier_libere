@@ -21,13 +21,12 @@ class Importer extends Component {
     super(props);
     this.state = {
       dragEntered: false,
-      importing: [{
-        fileName: 'IMG_BLAHBLAHBLAH.jpg',
-        name: 'IMG_BLAHBLAHBLAH',
-        progress: 80,
-        progressTooltip: 'Loading...',
-        display: false
-      }]
+      importing: [/*{
+        fileName: 'hi',
+        name: 'hi',
+        progress: 'error',
+        progressTooltip: 'This is a test.'
+      }*/]
     }
   }
 
@@ -50,39 +49,39 @@ class Importer extends Component {
               <Grid item xs={10} s={9} md={8} lg={7} xl={6} key={index}>
                 <Card square={true}>
 
-                  <canvas id={`display_canvas-${index}`} src="/scanned.png" style={{width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '500px', display: imgImport.display ? 'unset' : 'none'}}/>
+                  <canvas id={`display_canvas-${index}`} src="/scanned.png" style={{width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '500px', display: 'none'}}/>
 
                   <CardContent>
                     <TextField defaultValue={imgImport.name} fullWidth={true} onInput={e=>{const importing = this.state.importing; importing[index].name = e.target.value; this.setState({importing: importing})}}/>
-
-                    {/* // <Typography component="p">
-                    //   Loading...
-                    // </Typography> */}
                   </CardContent>
 
                   <CardActions>
                     <div style={{flexGrow: 1}}>
                       {
-                        imgImport.progress !== 'indeterminate'?
+                        imgImport.sourceBitmap?
                           <Button color="primary">
-                            Override Detection
+                            override
                           </Button>
                         : null
                       }
                     </div>
 
-                    <div style={{marginLeft: 0, marginRight: 16}}>
-                      <Tooltip title={imgImport.progressTooltip}>
-                        {
-                          imgImport.progress === 'indeterminate' || typeof imgImport.progress === 'number'?
-                            <CircularProgress variant={typeof imgImport.progress === 'number' ? 'static' : 'indeterminate'} value={typeof imgImport.progress === 'number' ? imgImport.progress : 0} size={24}/>
-                          :
-                            imgImport.progress === 'done' ?
-                              <Check/>
-                            :
-                              <Warning/>
-                        }
-                      </Tooltip>
+                    <div style={{marginLeft: 20, marginRight: 16}}>
+                      {
+                        imgImport.progress === 'indeterminate' || typeof imgImport.progress === 'number'?
+                          <Tooltip title={imgImport.progressTooltip}><CircularProgress variant={typeof imgImport.progress === 'number' ? 'static' : 'indeterminate'} value={typeof imgImport.progress === 'number' ? imgImport.progress : 0} size={24}/></Tooltip>
+                        : null
+                      }
+                      {
+                        imgImport.progress === 'done' ?
+                          <Tooltip title={imgImport.progressTooltip}><Check/></Tooltip>
+                        : null
+                      }
+                      {
+                        imgImport.progress === 'error'?
+                          <Tooltip title={imgImport.progressTooltip}><Warning/></Tooltip>
+                        : null
+                      }
                     </div>
                   </CardActions>
                 </Card>
@@ -111,18 +110,63 @@ class Importer extends Component {
 
     for(var i = 0; i < files.length; i++) {
       const file = files.item(i);
-      console.log(file);
-      newImporting.push({
+
+      const index = newImporting.push({
         fileName: file.name,
         name: file.name.split('.')[0],
         progress: 'indeterminate',
         progressTooltip: 'Loading...',
-        display: false
-      });
+        worker: new Worker('importer.js')
+      }) - 1;
+
+      newImporting[index].worker.onmessage = e => {
+        const importing = this.state.importing;
+
+        switch(e.data[0]) {
+          case 'source_bitmap':
+            importing[index].sourceBitmap = e.data[1];
+            this.setState({importing: importing});
+
+            var canvas = document.getElementById(`display_canvas-${index}`);
+            canvas.style.display = 'unset';
+            canvas.width = e.data[1].width;
+            canvas.height = e.data[1].height;
+            canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(e.data[1].data), e.data[1].width, e.data[1].height), 0, 0);
+            break;
+
+          case 'progress':
+            importing[index].progress = e.data[1];
+            importing[index].progressTooltip = e.data[2];
+            this.setState({importing: importing});
+            break;
+
+          default:
+            console.error('unhandled message from worker', e.data);
+        }
+      };
+
+      var reader = new FileReader();
+      reader.onload = e => {
+        newImporting[index].worker.postMessage([e.target.result]);
+      }
+      reader.readAsArrayBuffer(file);
     }
 
-    this.setState({importing: newImporting}, ()=>{console.log(this.state.importing)});
+    this.setState({importing: newImporting});
+  }
+
+  componentWillUnmount() {
+    this.state.importing.forEach(imgImport => {
+      imgImport.worker.terminate();
+    });
   }
 }
+
+// displayJIMPImage(image) {
+//   var canvas = document.getElementById('display');
+//   canvas.width = image.bitmap.width;also display unset
+//   canvas.height = image.bitmap.height;
+//   canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.bitmap.data), image.bitmap.width, image.bitmap.height), 0, 0);
+// }
 
 export default Importer;
