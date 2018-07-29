@@ -123,6 +123,12 @@ class Importer extends Component {
         const importing = this.state.importing;
 
         switch(e.data[0]) {
+          case 'progress':
+            importing[index].progress = e.data[1];
+            importing[index].progressTooltip = e.data[2];
+            this.setState({importing: importing});
+            break;
+
           case 'source_bitmap':
             importing[index].sourceBitmap = e.data[1];
             this.setState({importing: importing});
@@ -134,10 +140,22 @@ class Importer extends Component {
             canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(e.data[1].data), e.data[1].width, e.data[1].height), 0, 0);
             break;
 
-          case 'progress':
-            importing[index].progress = e.data[1];
-            importing[index].progressTooltip = e.data[2];
+          case 'qr_data':
+            importing[index].qrData = e.data[1];
             this.setState({importing: importing});
+            break;
+
+          case 'done':
+            importing[index].finalBitmap = e.data[1];
+            importing[index].progress = 'done';
+            importing[index].progressTooltip = 'Importing complete!';
+            this.setState({importing: importing});
+
+            var canvas = document.getElementById(`display_canvas-${index}`);
+            canvas.style.display = 'unset';
+            canvas.width = e.data[1].width;
+            canvas.height = e.data[1].height;
+            canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(e.data[1].data), e.data[1].width, e.data[1].height), 0, 0);
             break;
 
           default:
