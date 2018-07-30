@@ -353,7 +353,7 @@ function getJimpPixelIndex(x, y, image, clampXY = true) {
 }
 
 function debugDisplay(image) {
-  if(true) {
+  if(false) {
     this.postMessage(['debug', image.bitmap]);
   }
 }
