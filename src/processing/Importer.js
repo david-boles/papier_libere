@@ -138,17 +138,13 @@ class Importer extends Component {
           case 'source_bitmap':
             importing[index].sourceBitmap = e.data[1];
             this.setState({importing: importing});
-
-            var canvas = document.getElementById(`display_canvas-${index}`);
-            canvas.style.display = 'unset';
-            canvas.width = e.data[1].width;
-            canvas.height = e.data[1].height;
-            canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(e.data[1].data), e.data[1].width, e.data[1].height), 0, 0);
+            this.displayBitmap(index, e.data[1]);
             break;
 
           case 'qr_data':
             importing[index].qrData = e.data[1];
             this.setState({importing: importing});
+            console.log(e.data[1])
             break;
 
           case 'done':
@@ -156,12 +152,11 @@ class Importer extends Component {
             importing[index].progress = 'done';
             importing[index].progressTooltip = 'Importing complete!';
             this.setState({importing: importing});
+            this.displayBitmap(index, e.data[1]);
+            break;
 
-            var canvas = document.getElementById(`display_canvas-${index}`);
-            canvas.style.display = 'unset';
-            canvas.width = e.data[1].width;
-            canvas.height = e.data[1].height;
-            canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(e.data[1].data), e.data[1].width, e.data[1].height), 0, 0);
+          case 'debug':
+            this.displayBitmap(index, e.data[1]);
             break;
 
           default:
@@ -183,6 +178,14 @@ class Importer extends Component {
     this.state.importing.forEach(imgImport => {
       imgImport.worker.terminate();
     });
+  }
+
+  displayBitmap(index, bitmap) {
+    var canvas = document.getElementById(`display_canvas-${index}`);
+    canvas.style.display = 'unset';
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(bitmap.data), bitmap.width, bitmap.height), 0, 0);
   }
 }
 

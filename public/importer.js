@@ -4,6 +4,45 @@ importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-t
 
 
 
+const roughPerspPPI = 50;
+const finalPerspPPI = 400
+const config = {
+  0: {//Standard paper - '0 PAPER_TYPE ORIENTATION QR_SIZE'
+    finalDimensions: {
+      LTR: {//Letter (8.5x11")
+        P: {//Portrait
+          width: 8.5*finalPerspPPI,
+          height: 11*finalPerspPPI
+        },
+        L: {//Landscape
+          width: 11*finalPerspPPI,
+          height: 8.5*finalPerspPPI
+        }
+      }
+    }
+  },
+  1: {//Notebook - '1 PAGE_NUMBER'
+    roughQRDimension: 0.75*roughPerspPPI,
+    cornerSeedOffsets: [//Offsets for points at which to start the corner detection process, measured from the top left of the qr code (up is -y).
+      {x: 0.75*roughPerspPPI, y: -0.625*roughPerspPPI},
+      {x: -0.25*roughPerspPPI, y: -0.625*roughPerspPPI},
+      {x: 0.75*roughPerspPPI, y: -1.625*roughPerspPPI},
+    ],
+    finalDimensions: {
+      width: 7.125*finalPerspPPI,
+      height: 10*finalPerspPPI
+    },
+    finalCorners: {
+      tl: {x: 0.125*finalPerspPPI, y: 0.125*finalPerspPPI},
+      tr: {x: 7*finalPerspPPI, y: 0.125*finalPerspPPI},
+      bl: {x: 0.125*finalPerspPPI, y: 9.875*finalPerspPPI},
+      br: {x: 7*finalPerspPPI, y: 8.5*finalPerspPPI}
+    }
+  }
+}
+
+
+
 onmessage = (e) => {
   if(e.data.length === 1) {//Processing a raw image buffer for the first time
     Jimp.read(e.data[0], (err, srcImage) => {
@@ -39,7 +78,7 @@ onmessage = (e) => {
 
 function continueProcessing(srcImage, qrData, corners) {
   postMessage(['progress', 55, 'Correcting for perspective...']);
-  const corrected = correctForPerspective(srcImage, corners);
+  const corrected = correctForPerspective(srcImage, qrData, corners);
   postMessage(['done', corrected.bitmap]);
 }
 
@@ -69,56 +108,125 @@ function readQR(image) {
 
 
 
-const qrPerpPPI = 50;
-const qrPerspBorder = 250;
-
 function detectCorners(image, qr) {
-  //Create rough perspective correction transform based on the QR code
-  const imgToQRTrans = PerspT([qr.location.topLeftCorner.x, qr.location.topLeftCorner.y,
-                         qr.location.topRightCorner.x, qr.location.topRightCorner.y,
-                         qr.location.bottomLeftCorner.x, qr.location.bottomLeftCorner.y,
-                         qr.location.bottomRightCorner.x,qr.location.bottomRightCorner.y],
-                        [(7.5*qrPerpPPI) + qrPerspBorder, (10*qrPerpPPI) + qrPerspBorder,
-                         (8.25*qrPerpPPI) + qrPerspBorder, (10*qrPerpPPI) + qrPerspBorder,
-                         (7.5*qrPerpPPI) + qrPerspBorder, (10.75 * qrPerpPPI) + qrPerspBorder,
-                         (8.25*qrPerpPPI) + qrPerspBorder, (10.75 * qrPerpPPI) + qrPerspBorder]);
+  //Figure out how big the QR code should be for the rough transformation and where page corner detection should start
+  const qrDataSplit = qr.data.split(' ');
 
-  //Create downsampled, roughly perspective corrected image
-  var qrPerspImage = new Jimp((8.5 * qrPerpPPI) + (qrPerspBorder * 2), (11 * qrPerpPPI) + (qrPerspBorder * 2));
-  qrPerspImage.scan(0, 0, qrPerspImage.bitmap.width, qrPerspImage.bitmap.height, (x, y, idx) => {
-    const inputPixel = imgToQRTrans.transformInverse(x, y);
+  var roughQRDimension, cornerSeedOffsets;
+  switch(Number(qrDataSplit[0])) {
+    case 0: 
+      roughQRDimension = (qrDataSplit[3]/100)*roughPerspPPI;
+      cornerSeedOffsets = [
+        {x: -roughQRDimension/6, y: -roughQRDimension/6},//top left
+        {x: roughQRDimension/2, y: -roughQRDimension/6},//top mid
+        {x: roughQRDimension+(roughQRDimension/6), y: -roughQRDimension/6},//top right
+        {x: roughQRDimension+(roughQRDimension/6), y: roughQRDimension/2},//right mid
+        {x: roughQRDimension+(roughQRDimension/6), y: roughQRDimension+(roughQRDimension/6)},//bottom right
+        {x: roughQRDimension/2, y: roughQRDimension+(roughQRDimension/6)},//bottom mid
+        {x: -roughQRDimension/6, y: roughQRDimension+(roughQRDimension/6)},//bottom left
+        {x: -roughQRDimension/6, y: roughQRDimension/2},//left mid
+      ];
+      break;
+    case 1:
+      roughQRDimension = config[1].roughQRDimension;
+      cornerSeedOffsets = config[1].cornerSeedOffsets;
+      break;
+    default:
+      throw 'invalid page type for corners';
+  }
+
+
+
+  //Figure out what the size of the rough transformation image needs to be to fit all four corners of the source image
+  const qrTrans = PerspT([qr.location.topLeftCorner.x, qr.location.topLeftCorner.y,
+                                   qr.location.topRightCorner.x, qr.location.topRightCorner.y,
+                                   qr.location.bottomLeftCorner.x, qr.location.bottomLeftCorner.y,
+                                   qr.location.bottomRightCorner.x,qr.location.bottomRightCorner.y],
+                                  [0, 0,
+                                   roughQRDimension, 0,
+                                   0, roughQRDimension,
+                                   roughQRDimension, roughQRDimension]);
+
+  var mostLeft = roughQRDimension;
+  var mostRight = 0;
+  var mostUp = roughQRDimension;
+  var mostDown = 0;
+
+  [[0, 0], [image.bitmap.width, 0], [0, image.bitmap.height], [image.bitmap.width, image.bitmap.height]].forEach(sourceCorner => {
+    const srcInQR = qrTrans.transform(sourceCorner[0], sourceCorner[1]);
+    if(srcInQR[0] < mostLeft) mostLeft = Math.floor(srcInQR[0]);
+    if(srcInQR[0] > mostRight) mostRight = Math.ceil(srcInQR[0]);
+    if(srcInQR[1] < mostUp) mostUp = Math.floor(srcInQR[1]);
+    if(srcInQR[1] > mostDown) mostDown = Math.ceil(srcInQR[1]);
+  });
+
+
+
+  //Create rough perspective correction transform based on the QR code
+  const roughTrans = PerspT([qr.location.topLeftCorner.x, qr.location.topLeftCorner.y,
+                               qr.location.topRightCorner.x, qr.location.topRightCorner.y,
+                               qr.location.bottomLeftCorner.x, qr.location.bottomLeftCorner.y,
+                               qr.location.bottomRightCorner.x,qr.location.bottomRightCorner.y],
+                              [0-mostLeft, 0-mostUp,
+                               roughQRDimension-mostLeft, 0-mostUp,
+                               0-mostLeft, roughQRDimension-mostUp,
+                               roughQRDimension-mostLeft, roughQRDimension-mostUp]);
+
+
+  
+      
+  //Create downsampled, rough perspective corrected image
+  var roughTransImage = new Jimp(mostRight-mostLeft, mostDown-mostUp);
+  roughTransImage.scan(0, 0, roughTransImage.bitmap.width, roughTransImage.bitmap.height, (x, y, idx) => {
+    const inputPixel = roughTrans.transformInverse(x, y);
     const iidx = getJimpPixelIndex(inputPixel[0], inputPixel[1], image);
 
-    qrPerspImage.bitmap.data[idx + 0] = image.bitmap.data[iidx + 0];
-    qrPerspImage.bitmap.data[idx + 1] = image.bitmap.data[iidx + 1];
-    qrPerspImage.bitmap.data[idx + 2] = image.bitmap.data[iidx + 2];
-    qrPerspImage.bitmap.data[idx + 3] = image.bitmap.data[iidx + 3];
+    roughTransImage.bitmap.data[idx + 0] = image.bitmap.data[iidx + 0];
+    roughTransImage.bitmap.data[idx + 1] = image.bitmap.data[iidx + 1];
+    roughTransImage.bitmap.data[idx + 2] = image.bitmap.data[iidx + 2];
+    roughTransImage.bitmap.data[idx + 3] = image.bitmap.data[iidx + 3];
   });
 
+  debugDisplay(roughTransImage);
 
-  var cornersImage = qrPerspImage/*.clone()*/;
-  cornersImage.scan(0, 0, cornersImage.bitmap.width, cornersImage.bitmap.height, (x, y, idx) => {
+
+
+  //Find the difference of the color of each pixel to the QR's background
+  roughTransImage.scan(0, 0, roughTransImage.bitmap.width, roughTransImage.bitmap.height, (x, y, idx) => {
     const background = qr.colors.background
-    const dist = colorDistance(cornersImage.bitmap.data.slice(idx, idx+3), [background.r, background.g, background.b]);
-    cornersImage.bitmap.data[idx + 0] = dist;
-    cornersImage.bitmap.data[idx + 1] = 0;
-    cornersImage.bitmap.data[idx + 2] = 0;
-    cornersImage.bitmap.data[idx + 3] = 255;
+    const dist = colorDistance(roughTransImage.bitmap.data.slice(idx, idx+3), [background.r, background.g, background.b]);
+    roughTransImage.bitmap.data[idx + 0] = dist;
+    roughTransImage.bitmap.data[idx + 1] = 0;
+    roughTransImage.bitmap.data[idx + 2] = 0;
+    roughTransImage.bitmap.data[idx + 3] = 255;
   });
+
+  debugDisplay(roughTransImage);
+
+
   
+  //Starting from the corner detection seed points, flood fill the page, checking whether a point is a corner
   const queue = [];
   const tryQueuing = (x, y) => {
-    const idx = getJimpPixelIndex(x, y, cornersImage);
-    if(cornersImage.bitmap.data[idx] < 75 && !cornersImage.bitmap.data[idx+1]) {
-      cornersImage.bitmap.data[idx+1] = 255;
+    const idx = getJimpPixelIndex(x, y, roughTransImage);
+    if(roughTransImage.bitmap.data[idx] < 75 && !roughTransImage.bitmap.data[idx+1]) {
+      roughTransImage.bitmap.data[idx+1] = 255;
       queue.push({x: x, y: y});
+      return true;
     }
+    return false;
   }
-  tryQueuing(Math.round((8.375*qrPerpPPI) + qrPerspBorder), Math.round((10.875 * qrPerpPPI) + qrPerspBorder));
+  cornerSeedOffsets.forEach(offset => {
+    const x = Math.round(offset.x-mostLeft);
+    const y = Math.round(offset.y-mostUp);
+    if(tryQueuing(x, y)) {//This just helps with debugging
+      roughTransImage.bitmap.data[getJimpPixelIndex(x, y, roughTransImage) + 2] = 255;
+    }
+  });
 
-  var tl = {val: cornersImage.bitmap.width + cornersImage.bitmap.height, loc: {x: cornersImage.bitmap.width, y: cornersImage.bitmap.height}};//Minimize x+y
-  var tr = {val: -cornersImage.bitmap.height, loc: {x: 0, y: cornersImage.bitmap.height}};//Maximize x-y
-  var bl = {val: cornersImage.bitmap.width, loc: {x: cornersImage.bitmap.width, y: 0}};//Minimize x-y
+  var tl = {val: roughTransImage.bitmap.width + roughTransImage.bitmap.height, loc: {x: roughTransImage.bitmap.width, y: roughTransImage.bitmap.height}};//Minimize x+y
+  var tr = {val: -roughTransImage.bitmap.height, loc: {x: 0, y: roughTransImage.bitmap.height}};//Maximize x-y
+  var bl = {val: roughTransImage.bitmap.width, loc: {x: roughTransImage.bitmap.width, y: 0}};//Minimize x-y
   var br = {val: 0, loc: {x:0, y:0}};//Maximize x+y
 
   const updateMaxima = loc => {
@@ -139,6 +247,11 @@ function detectCorners(image, qr) {
     tryQueuing(loc.x, loc.y-1);
   }
 
+  debugDisplay(roughTransImage);
+  
+
+
+  //Return corners
   const corners = {
     tl: tl.loc,
     tr: tr.loc,
@@ -146,7 +259,7 @@ function detectCorners(image, qr) {
     br: br.loc
   }
   for(var key in corners) {
-    var sourceLoc = imgToQRTrans.transformInverse(corners[key].x, corners[key].y);
+    var sourceLoc = roughTrans.transformInverse(corners[key].x, corners[key].y);
     corners[key] = {x: sourceLoc[0], y: sourceLoc[1]};
   }
 
@@ -155,19 +268,42 @@ function detectCorners(image, qr) {
 
 
 
-const finalPerspPPI = 400;
+function correctForPerspective(image, qrData, corners) {
+  //Figure out how big the image should be for the final transformation and where page corners should go.
+  const qrDataSplit = qrData.split(' ');
 
-function correctForPerspective(image, corners) {
+  var finalDimensions, finalCorners;
+  switch(Number(qrDataSplit[0])) {
+    case 0: 
+      finalDimensions = config[0].finalDimensions[qrDataSplit[1]]['P'/* TODO qrDataSplit[2]*/];
+      finalCorners = {
+        tl: {x: 0, y: 0},
+        tr: {x: finalDimensions.width-1, y: 0},
+        bl: {x: 0, y: finalDimensions.height-1},
+        br: {x: finalDimensions.width-1, y: finalDimensions.height-1},
+      };
+      break;
+    case 1:
+      finalDimensions = config[1].finalDimensions;
+      finalCorners = config[1].finalCorners;
+      break;
+    default:
+      throw 'invalid page type for final transformation';
+  }
+
+
+
+  //Generate the final perspective transformed image.
   const perspT = PerspT([corners.tl.x, corners.tl.y,
                          corners.tr.x, corners.tr.y,
                          corners.bl.x, corners.bl.y,
                          corners.br.x, corners.br.y],
-                        [0, 0,
-                         8.5*finalPerspPPI, 0,
-                         0, 11*finalPerspPPI,
-                         8.5*finalPerspPPI, 11*finalPerspPPI]);
+                        [finalCorners.tl.x, finalCorners.tl.y,
+                         finalCorners.tr.x, finalCorners.tr.y,
+                         finalCorners.bl.x, finalCorners.bl.y,
+                         finalCorners.br.x, finalCorners.br.y]);
 
-  var output = new Jimp((8.5 * finalPerspPPI), (11 * finalPerspPPI));
+  var output = new Jimp(finalDimensions.width, finalDimensions.height);
 
   output.scan(0, 0, output.bitmap.width, output.bitmap.height, (x, y, idx) => {
     const inputPixel = perspT.transformInverse(x, y);
@@ -214,4 +350,10 @@ function getPixelIndex(x, y, width, height, elmtsPerPix = 4, clampXY = true) {
 
 function getJimpPixelIndex(x, y, image, clampXY = true) {
   return getPixelIndex(x, y, image.bitmap.width, image.bitmap.height, 4, clampXY);
+}
+
+function debugDisplay(image) {
+  if(true) {
+    this.postMessage(['debug', image.bitmap]);
+  }
 }

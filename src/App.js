@@ -9,6 +9,8 @@ import firebase from 'firebase';
 import React, { Component } from 'react';
 import Processor from './processing/Processor';
 import LandingPage from './LandingPage';
+import Settings from '@material-ui/icons/SettingsRounded';
+import IconButton from '@material-ui/core/IconButton'
 
 const fbConfig = {
   apiKey: "AIzaSyBffehKyH0dD4IYmNF-oGbaXx3mjEKXC0g",
@@ -56,6 +58,13 @@ class App extends Component {
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
               Papier Libéré - v0.0.9
             </Typography>
+            {
+              this.state.auth?
+                <IconButton color='inherit' style={{marginRight: 12}}>
+                  <Settings/>
+                </IconButton>
+              : null
+            }
             {
               this.state.auth === false || this.state.auth === 'error'?
                 <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogIn()}}>
