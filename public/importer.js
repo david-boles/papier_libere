@@ -4,7 +4,7 @@ importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-t
 
 
 
-const roughPerspPPI = 50;
+const roughPerspPPI = 100;
 const finalPerspPPI = 400
 const config = {
   0: {//Standard paper - '0 PAPER_TYPE ORIENTATION QR_SIZE'

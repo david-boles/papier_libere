@@ -10,7 +10,7 @@ class LandingPage extends Component {
     return (
       <Grid container direction='row' justify='center' alignItems='center' style={{height: 'calc(100vh - 48px)'}}>
         <Grid item>
-          <Typography variant='display1' align='center' style={{padding: 24}}>Welcome to Papier Libéré, an open source smart paper ecosystem. Please log in above.</Typography>
+          <Typography variant='display1' align='center' style={{padding: 24}}>Welcome to Papier Libéré, an open source smart paper ecosystem currently in alpha. Please log in above to continue.</Typography>
         </Grid>
       </Grid>
     );
