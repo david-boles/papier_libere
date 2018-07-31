@@ -14,6 +14,7 @@ import IconButton from '@material-ui/core/IconButton';
 import CloseIcon from '@material-ui/icons/Close';
 import Slide from '@material-ui/core/Slide';
 import Fade from '@material-ui/core/Fade';
+import Overrider from './Overrider';
 
 class Importer extends Component {
   constructor(props) {
@@ -26,7 +27,8 @@ class Importer extends Component {
         progress: 'error',
         progressTooltip: 'This is a test.'
       }*/],
-      overridingIndex: null
+      overriding: false,
+      overrider: ''
     }
   }
 
@@ -59,7 +61,7 @@ class Importer extends Component {
                     <div style={{flexGrow: 1}}>
                       {
                         imgImport.sourceBitmap?
-                          <Button color="primary" onClick={()=>{this.setState({overridingIndex: index});}}>
+                          <Button color="primary" onClick={()=>{this.setState({overriding: true, overrider: <Overrider import={imgImport} onClose={()=>{this.handleOverrideClose()}}/>});}}>
                             override
                           </Button>
                         : null
@@ -106,14 +108,12 @@ class Importer extends Component {
 
         <Dialog
           fullScreen
-          open={this.state.overridingIndex !== null}
+          open={this.state.overriding}
           onClose={()=>{this.handleOverrideClose()}}
           TransitionComponent={Slide}
           TransitionProps={{direction: 'up'}}
         >
-          <IconButton color="inherit" onClick={()=>{this.handleOverrideClose()}} aria-label="Close">
-            <CloseIcon />
-          </IconButton>
+          {this.state.overrider}
         </Dialog>
       </div>
     );
@@ -183,7 +183,7 @@ class Importer extends Component {
   }
 
   handleOverrideClose() {
-    this.setState({overridingIndex: null});
+    this.setState({overriding: false});
   }
 
   componentWillUnmount() {
