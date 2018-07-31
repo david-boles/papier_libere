@@ -9,6 +9,11 @@ import Tooltip from '@material-ui/core/Tooltip';
 import Check from '@material-ui/icons/Check';
 import Warning from '@material-ui/icons/Warning';
 import React, { Component } from 'react';
+import Dialog from '@material-ui/core/Dialog';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
+import Slide from '@material-ui/core/Slide';
+import Fade from '@material-ui/core/Fade';
 
 class Importer extends Component {
   constructor(props) {
@@ -20,13 +25,14 @@ class Importer extends Component {
         name: 'hi',
         progress: 'error',
         progressTooltip: 'This is a test.'
-      }*/]
+      }*/],
+      overridingIndex: null
     }
   }
 
   render() {
     return (
-      <div style={{padding: 20}}>
+      <div style={{padding: 20, height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
         <input type='file' id='file_selector' multiple accept='image/*' style={{display: 'none'}} onChange={(e)=>{this.handleSelect(e.target.files)}}/>
 
         <Grid container direction='column' justify='flex-start' alignItems='center' spacing={40}>
@@ -53,7 +59,7 @@ class Importer extends Component {
                     <div style={{flexGrow: 1}}>
                       {
                         imgImport.sourceBitmap?
-                          <Button color="primary">
+                          <Button color="primary" onClick={()=>{this.setState({overridingIndex: index});}}>
                             override
                           </Button>
                         : null
@@ -83,12 +89,6 @@ class Importer extends Component {
             );
           })}
 
-          {/* <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
-            <Card square={true}>
-              <OldImporter/>
-            </Card>
-          </Grid> */}
-
           <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
             <Button variant='raised' color='primary' disabled={this.state.importing.length === 0  || (()=>{
               var allDone = true;
@@ -101,6 +101,18 @@ class Importer extends Component {
             </Button>
           </Grid>
         </Grid>
+
+        <Dialog
+          fullScreen
+          open={this.state.overridingIndex !== null}
+          onClose={()=>{this.handleOverrideClose()}}
+          TransitionComponent={Slide}
+          TransitionProps={{direction: 'up'}}
+        >
+          <IconButton color="inherit" onClick={()=>{this.handleOverrideClose()}} aria-label="Close">
+            <CloseIcon />
+          </IconButton>
+        </Dialog>
       </div>
     );
   }
@@ -168,6 +180,10 @@ class Importer extends Component {
     this.setState({importing: newImporting});
   }
 
+  handleOverrideClose() {
+    this.setState({overridingIndex: null});
+  }
+
   componentWillUnmount() {
     this.state.importing.forEach(imgImport => {
       imgImport.worker.terminate();
@@ -182,12 +198,5 @@ class Importer extends Component {
     canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(bitmap.data), bitmap.width, bitmap.height), 0, 0);
   }
 }
-
-// displayJIMPImage(image) {
-//   var canvas = document.getElementById('display');
-//   canvas.width = image.bitmap.width;also display unset
-//   canvas.height = image.bitmap.height;
-//   canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.bitmap.data), image.bitmap.width, image.bitmap.height), 0, 0);
-// }
 
 export default Importer;
