@@ -90,15 +90,17 @@ class Importer extends Component {
           })}
 
           <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
-            <Button variant='raised' color='primary' disabled={this.state.importing.length === 0  || (()=>{
-              var allDone = true;
-              this.state.importing.forEach(imgImport => {
-                allDone &= imgImport.progress === 'done'
-              })
-              return !allDone;
-            })()}>
-              export files
-            </Button>
+            <div style={{paddingBottom: 48}}>
+              <Button variant='raised' color='primary' disabled={this.state.importing.length === 0  || (()=>{
+                var allDone = true;
+                this.state.importing.forEach(imgImport => {
+                  allDone &= imgImport.progress === 'done'
+                })
+                return !allDone;
+              })()}>
+                export files
+              </Button>
+            </div>
           </Grid>
         </Grid>
 
