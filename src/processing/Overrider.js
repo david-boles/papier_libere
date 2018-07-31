@@ -6,57 +6,69 @@ import IconButton from '@material-ui/core/IconButton';
 import CloseIcon from '@material-ui/icons/Close';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import Fade from '@material-ui/core/Fade';
 
-const slideTimeout = 250;
+const transitionTimeout = 250;
 
 class Overrider extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      view: <Importer/>,
-      direction: 'right',
-      in: true
+      stage: 'qr',
+      slideTransitioningOut: false,
+      fadeTransitioningOut: false,
+      firstStage: true,
+      corners: {}
+    };
+    if(props.import.qrData) {
+      this.state.qrData = props.import.qrData;
+      this.state.stage = 'tl';
     }
+    if(props.import.corners) this.state.corners = props.import.corners;
   }
 
   render() {
     return (
-      // <React.Fragment>
-      //   {/* It seems dumb to do it this way but I had to to trick react into making separate Slides so that the directions actually worked. */
-      //     this.state.direction === 'left'?
-      //       <Slide in={this.state.in} timeout={slideTimeout} direction='left' appear={true}>
-      //         {this.state.view}
-      //       </Slide>
-      //     :
-      //       null
-      //   }
-      //   {
-      //     this.state.direction === 'right'?
-      //       <Slide in={this.state.in} timeout={slideTimeout} direction='right' appear={false}>
-      //         {this.state.view}
-      //       </Slide>
-      //     :
-      //       null
-      //   }
-      // </React.Fragment>
-      
-      // <Grid container>
-      //   <IconButton color="inherit" onClick={()=>{this.props.onClose()}} aria-label="Close">
-      //     <CloseIcon />
-      //   </IconButton>
-      //   {this.props.import.name}
-      // </Grid>
       <div style={{display: 'flex', height: '100%'}}>
         <div style={{width: 48+(12*2), paddingLeft: 12, paddingRight: 12}}>
-          <IconButton color="inherit" onClick={()=>{this.props.onClose()}} aria-label="Close">
+          <IconButton color="inherit" onClick={()=>{this.props.onClose()}} style={{marginTop: 12}} aria-label="Close">
             <CloseIcon />
           </IconButton>
-          <IconButton disabled={true} style={{marginTop: 'calc(50vh - 72px)'}} aria-label="Back">
+          <IconButton disabled={true} style={{marginTop: 'calc(50vh - 84px)'}} aria-label="Back">
             <ChevronLeftIcon />
           </IconButton>
         </div>
         <div style={{flexGrow: 1}}>
-          Stuff!
+          
+          {
+            this.state.stage==='qr'?
+              <Slide in={this.state.stage==='qr' && !this.state.slideTransitioningOut} timeout={transitionTimeout} direction='right' appear={!this.state.firstStage}>
+                <div>
+                  <p>Set qr data</p>
+                </div>
+              </Slide>
+            : null
+          }
+
+          {
+            this.state.stage!=='qr'?
+              <Slide in={this.state.stage!=='qr' && !this.state.slideTransitioningOut} timeout={transitionTimeout} direction='left' appear={!this.state.firstStage}>
+                <div>
+                  {
+                    ['tl', 'tr', 'bl', 'br'].map(corner => (
+                      this.state.stage === corner?
+                        <Fade in={this.state.stage===corner && !this.state.fadeTransitioningOut} timeout={transitionTimeout} appear={!this.state.firstStage} key={corner}>
+                          <div>{corner}</div>
+                        </Fade>
+                      : null
+                    ))
+                  }
+
+                </div>
+              </Slide>
+            : null
+          }
+
         </div>
         <div style={{width: 48+(12*2), paddingLeft: 12, paddingRight: 12}}>
           <IconButton style={{marginTop: 'calc(50vh - 24px)'}} aria-label="Back">
@@ -67,24 +79,19 @@ class Overrider extends Component {
     );
   }
 
-  setView(component) {
-    this.setState({
-      in: false
-    }, ()=>{
-      setTimeout(() => {
-        this.setState({
-          view: component,
-          direction: 'left',
-          in: true
-        }, () => {
-          setTimeout(() => {
-            this.setState({
-              direction: 'right'
-            });
-          }, slideTimeout);
-        });
-      }, slideTimeout);
+  setStage(stage) {
+    const sliding = stage === 'qr' || this.state.stage === 'qr';
+    this.setState({slideTransitioningOut: sliding, fadeTransitioningOut: !sliding, firstStage: false}, ()=>{
+      setTimeout(()=>{
+        this.setState({stage: stage, slideTransitioningOut: false, fadeTransitioningOut: false});
+      }, transitionTimeout);
     });
+  }
+
+  componentDidMount() {
+    setTimeout(()=>{this.setStage('tl');}, 5000);
+    setTimeout(()=>{this.setStage('tr');}, 10000);
+    setTimeout(()=>{this.setStage('qr');}, 15000);
   }
 }
 
