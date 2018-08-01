@@ -11,12 +11,14 @@ import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
+import SaveIcon from '@material-ui/icons/Save';
 
 const transitionTimeout = 250;
 
 class Overrider extends Component {
   constructor(props) {
     super(props);
+
     this.state = {
       stage: 0,//0 for qr data, 1-4 for tl, tr, bl, and br
       firstStage: true,
@@ -29,6 +31,7 @@ class Overrider extends Component {
       pageQRSize: 75,
       pageNumber: 1
     };
+    
     if(props.import.qrData) {
       const split = props.import.qrData.split(' ');
       const type = Number(split[0]);
@@ -125,8 +128,31 @@ class Overrider extends Component {
               if(this.state.stage === corners[i][0] && !this.state.corners[corners[i][1]]) return true;
             };
             return false;
-          })()} style={{marginTop: 'calc(50vh - 24px)'}} aria-label="Next" onClick={()=>{this.setStage(this.state.stage+1)}}>
-            <ChevronRightIcon />
+          })()} style={{marginTop: 'calc(50vh - 24px)'}} aria-label="Next" onClick={()=>{
+            if(this.state.stage === 4) {
+              var qrData = '';
+              qrData += this.state.pageType;
+              switch(this.state.pageType) {
+                case 0:
+                  qrData += ` ${this.state.pageSize} ${this.state.pageOrientation} ${this.state.pageQRSize}`;
+                  break;
+                case 1:
+                  qrData += ` ${this.state.pageNumber}`;
+                  break;
+                default:
+                  console.warn('no special attributes set for override complete');
+              }
+              this.props.onOverride(qrData, this.state.corners);
+            }else {
+              this.setStage(this.state.stage+1);
+            }
+          }}>
+            {
+              this.state.stage === 4?
+                <SaveIcon/>
+              :
+                <ChevronRightIcon/>
+            }
           </IconButton>
         </div>
       </div>

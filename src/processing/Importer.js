@@ -61,7 +61,22 @@ class Importer extends Component {
                     <div style={{flexGrow: 1}}>
                       {
                         imgImport.sourceBitmap?
-                          <Button color="primary" onClick={()=>{this.setState({overriding: true, overrider: <Overrider import={imgImport} onClose={()=>{this.handleOverrideClose()}}/>});}}>
+                          <Button color="primary" onClick={()=>{this.setState({overriding: true, overrider: <Overrider import={imgImport} onClose={()=>{this.handleOverrideClose()}} onOverride={(qrData, corners)=>{
+                            this.handleOverrideClose();
+
+                            const importing = this.state.importing;
+                            importing[index].worker.terminate();
+
+                            importing[index].progress = 'indeterminate',
+                            importing[index].progressTooltip = 'Applying overrides...',
+                            importing[index].worker = new Worker('/importer.js');
+                            importing[index].worker.onmessage = this.getWorkerHandler(index);
+                            importing[index].qrData = qrData;
+                            importing[index].corners = corners;
+                            this.setState({importing: importing}, ()=>{
+                              importing[index].worker.postMessage([importing[index].sourceBitmap, qrData, corners]);
+                            });
+                          }}/>});}}>
                             override
                           </Button>
                         : null
@@ -130,53 +145,10 @@ class Importer extends Component {
         name: file.name.split('.')[0],
         progress: 'indeterminate',
         progressTooltip: 'Loading...',
-        worker: new Worker('importer.js')
+        worker: new Worker('/importer.js')
       }) - 1;
 
-      newImporting[index].worker.onmessage = e => {
-        const importing = this.state.importing;
-
-        switch(e.data[0]) {
-          case 'progress':
-            importing[index].progress = e.data[1];
-            importing[index].progressTooltip = e.data[2];
-            this.setState({importing: importing});
-            break;
-
-          case 'source_bitmap':
-            importing[index].sourceBitmap = e.data[1];
-            this.setState({importing: importing});
-            this.displayBitmap(index, e.data[1]);
-            break;
-
-          case 'qr_data':
-            importing[index].qrData = e.data[1];
-            this.setState({importing: importing});
-            console.log(e.data[1])
-            break;
-
-            case 'corners':
-              importing[index].corners = e.data[1];
-              this.setState({importing: importing});
-              console.log(e.data[1])
-              break;
-
-          case 'done':
-            importing[index].finalBitmap = e.data[1];
-            importing[index].progress = 'done';
-            importing[index].progressTooltip = 'Importing complete!';
-            this.setState({importing: importing});
-            this.displayBitmap(index, e.data[1]);
-            break;
-
-          case 'debug':
-            this.displayBitmap(index, e.data[1]);
-            break;
-
-          default:
-            console.error('unhandled message from worker', e.data);
-        }
-      };
+      newImporting[index].worker.onmessage = this.getWorkerHandler(index);
 
       var reader = new FileReader();
       reader.onload = e => {
@@ -186,6 +158,53 @@ class Importer extends Component {
     }
 
     this.setState({importing: newImporting});
+  }
+
+  getWorkerHandler(index) {
+    return e => {
+      const importing = this.state.importing;
+
+      switch(e.data[0]) {
+        case 'progress':
+          importing[index].progress = e.data[1];
+          importing[index].progressTooltip = e.data[2];
+          this.setState({importing: importing});
+          break;
+
+        case 'source_bitmap':
+          importing[index].sourceBitmap = e.data[1];
+          this.setState({importing: importing});
+          this.displayBitmap(index, e.data[1]);
+          break;
+
+        case 'qr_data':
+          importing[index].qrData = e.data[1];
+          this.setState({importing: importing});
+          console.log(e.data[1])
+          break;
+
+          case 'corners':
+            importing[index].corners = e.data[1];
+            this.setState({importing: importing});
+            console.log(e.data[1])
+            break;
+
+        case 'done':
+          importing[index].finalBitmap = e.data[1];
+          importing[index].progress = 'done';
+          importing[index].progressTooltip = 'Importing complete!';
+          this.setState({importing: importing});
+          this.displayBitmap(index, e.data[1]);
+          break;
+
+        case 'debug':
+          this.displayBitmap(index, e.data[1]);
+          break;
+
+        default:
+          console.error('unhandled message from worker', e.data);
+      }
+    };
   }
 
   handleOverrideClose() {

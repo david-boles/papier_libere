@@ -68,10 +68,15 @@ onmessage = (e) => {
     });
 
   }else {//Reprocessing (presumably using different corners or because the qr was not found)
-    srcImage = new Jimp(e.data[0].width, e.data[0].height);
-    srcImage.bitmap = e.data[0];
-    continueProcessing(srcImage, e.data[1], e.data[2]);
-    close();
+    try{
+      console.log('Starting a re-process, presumably something was overriden');
+      srcImage = new Jimp(e.data[0].width, e.data[0].height);
+      srcImage.bitmap = e.data[0];
+      continueProcessing(srcImage, e.data[1], e.data[2]);
+      close();
+    }catch(e) {
+      console.log(e);
+    }
   }
 }
 
