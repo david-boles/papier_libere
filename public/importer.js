@@ -7,7 +7,7 @@ importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-t
 const roughPerspPPI = 100;
 const finalPerspPPI = 400
 const config = {
-  0: {//Standard paper - '0 PAPER_TYPE ORIENTATION QR_SIZE'
+  0: {//Standard paper - '0 PAPER_SIZE ORIENTATION QR_SIZE'
     finalDimensions: {
       LTR: {//Letter (8.5x11")
         P: {//Portrait
@@ -58,6 +58,7 @@ onmessage = (e) => {
           postMessage(['qr_data', qr.data]);
           postMessage(['progress', 45, 'Detecting corners...']);
           const corners = detectCorners(srcImage, qr);
+          postMessage(['corners', corners]);
           continueProcessing(srcImage, qr.data, corners);
         }else {
           postMessage(['progress', 'error', 'No QR code was found.']);

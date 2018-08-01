@@ -155,6 +155,12 @@ class Importer extends Component {
             console.log(e.data[1])
             break;
 
+            case 'corners':
+              importing[index].corners = e.data[1];
+              this.setState({importing: importing});
+              console.log(e.data[1])
+              break;
+
           case 'done':
             importing[index].finalBitmap = e.data[1];
             importing[index].progress = 'done';
