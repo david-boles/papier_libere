@@ -9,8 +9,8 @@ PDFDocument.prototype.addSVG = function(svg, x, y, options) {
 const PPI = 72;
 
 //CONFIG
-const pageStart = 9999999;//What page index to start on, should be odd.
-const pageCount = 2;//Should be even (actual sheets of paper is half this).
+const pageStart = 1;//What page index to start on, should be odd.
+const pageCount = 100;//Should be even (actual sheets of paper is half this).
 const pageNumColor = '#c0c0c0';
 const cuttingTemplate = fs.readFileSync('./assets/cutting_template.svg').toString();
 const leftBindingTemplate = fs.readFileSync('./assets/page-dotted-left_binding.svg').toString();
