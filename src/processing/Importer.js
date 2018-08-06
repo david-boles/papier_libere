@@ -69,7 +69,7 @@ class Importer extends Component {
 
                             importing[index].progress = 'indeterminate',
                             importing[index].progressTooltip = 'Applying overrides...',
-                            importing[index].worker = new Worker('/importer.js');
+                            importing[index].worker = new Worker('/import_worker.js');
                             importing[index].worker.onmessage = this.getWorkerHandler(index);
                             importing[index].qrData = qrData;
                             importing[index].corners = corners;
@@ -145,7 +145,7 @@ class Importer extends Component {
         name: file.name.split('.')[0],
         progress: 'indeterminate',
         progressTooltip: 'Loading...',
-        worker: new Worker('/importer.js')
+        worker: new Worker('/import_worker.js')
       }) - 1;
 
       newImporting[index].worker.onmessage = this.getWorkerHandler(index);

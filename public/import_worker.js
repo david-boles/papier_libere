@@ -1,6 +1,7 @@
 importScripts('https://unpkg.com/jimp@0.2.27/browser/lib/jimp.min.js');
-importScripts('/jsQR.js');
+importScripts('/lib/jsQR.js');
 importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-transform.min.js');
+importScripts('/lib/nurbs.js');
 
 
 
@@ -84,8 +85,12 @@ onmessage = (e) => {
 
 function continueProcessing(srcImage, qrData, corners) {
   postMessage(['progress', 55, 'Correcting for perspective...']);
-  const corrected = correctForPerspective(srcImage, qrData, corners);
-  postMessage(['done', corrected.bitmap]);
+  var image = correctForPerspective(srcImage, qrData, corners);
+  debugDisplay(image);
+
+  postMessage(['progress', 80, 'Correcting white balance...']);
+  image = correctWhiteBalance(image);
+  postMessage(['done', image.bitmap]);
 }
 
 
@@ -322,6 +327,17 @@ function correctForPerspective(image, qrData, corners) {
   }); 
 
   return output;
+}
+
+
+
+function correctWhiteBalance(image, qrData) {
+  var curve = nurbs({
+    points: [[-1, 0], [-0.5, 0.5], [0.5, -0.5], [1, 0]],
+    degree: 2
+  });
+
+  return image;
 }
 
 
