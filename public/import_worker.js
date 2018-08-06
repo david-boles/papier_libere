@@ -1,12 +1,12 @@
 importScripts('https://unpkg.com/jimp@0.2.27/browser/lib/jimp.min.js');
 importScripts('/lib/jsQR.js');
 importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-transform.min.js');
-importScripts('/lib/nurbs.js');
-
-
+importScripts('/lib/bicubic-sample.js');
 
 const roughPerspPPI = 100;
-const finalPerspPPI = 400
+const finalPerspPPI = 400;
+const whiteBalRegionsPI = 1;
+const whiteBalSamplesPI = 20;
 const config = {
   0: {//Standard paper - '0 PAPER_SIZE ORIENTATION QR_SIZE'
     finalDimensions: {
@@ -20,7 +20,20 @@ const config = {
           height: 8.5*finalPerspPPI
         }
       }
-    }
+    },
+    whiteBalRegions: {
+      LTR: {
+        P: {
+          x: Math.ceil(8.5*whiteBalRegionsPI),
+          y: Math.ceil(11*whiteBalRegionsPI)
+        },
+        L: {
+          x: Math.ceil(11*whiteBalRegionsPI),
+          y: Math.ceil(8.5*whiteBalRegionsPI)
+        }
+      }
+    },
+    whiteBalScaleFactor: whiteBalSamplesPI/finalPerspPPI
   },
   1: {//Notebook - '1 PAGE_NUMBER'
     roughQRDimension: 0.75*roughPerspPPI,
@@ -38,7 +51,12 @@ const config = {
       tr: {x: 7*finalPerspPPI, y: 0.125*finalPerspPPI},
       bl: {x: 0.125*finalPerspPPI, y: 9.875*finalPerspPPI},
       br: {x: 7*finalPerspPPI, y: 8.5*finalPerspPPI}
-    }
+    },
+    whiteBalRegions: {
+      x: Math.ceil(7.125*whiteBalRegionsPI),
+      y: Math.ceil(10*whiteBalRegionsPI)
+    },
+    whiteBalScaleFactor: whiteBalSamplesPI/finalPerspPPI
   }
 }
 
@@ -89,7 +107,7 @@ function continueProcessing(srcImage, qrData, corners) {
   debugDisplay(image);
 
   postMessage(['progress', 80, 'Correcting white balance...']);
-  image = correctWhiteBalance(image);
+  image = correctWhiteBalance(image, qrData);
   postMessage(['done', image.bitmap]);
 }
 
@@ -332,9 +350,100 @@ function correctForPerspective(image, qrData, corners) {
 
 
 function correctWhiteBalance(image, qrData) {
-  var curve = nurbs({
-    points: [[-1, 0], [-0.5, 0.5], [0.5, -0.5], [1, 0]],
-    degree: 2
+  //Find the number of regions in the x and y direcitons based on the type of scan
+  const qrDataSplit = qrData.split(' ');
+  var numRegions, scaleFactor;
+  switch(Number(qrDataSplit[0])) {
+    case 0: 
+      numRegions = config[0].whiteBalRegions[qrDataSplit[1]]['P'/* TODO qrDataSplit[2]*/];
+      scaleFactor = config[0].whiteBalScaleFactor;
+      break;
+    case 1:
+      numRegions = config[1].whiteBalRegions;
+      scaleFactor = config[1].whiteBalScaleFactor;
+      break;
+    default:
+      throw 'invalid page type for white balance';
+  }
+
+  const resized = image.clone().resize(image.bitmap.width*scaleFactor, Jimp.AUTO);
+  debugDisplay(resized);
+
+  //Find the size of the regions
+  const fullRegionSize = {
+    width: image.bitmap.width/numRegions.x,
+    height: image.bitmap.height/numRegions.y
+  }
+  const resizedRegionSize = {
+    width: resized.bitmap.width/numRegions.x,
+    height: resized.bitmap.height/numRegions.y
+  }
+
+  //Populate a 2D array for the whitest pixels in each region
+  const whitestPixels = [];
+  for(var regCol = 0; regCol < numRegions.x; regCol++) {
+    whitestPixels.push([]);
+    for(var regRow = 0; regRow < numRegions.y; regRow++) {
+      whitestPixels[regCol].push({
+        whiteDist: 256,
+        color: [-1, -1, -1],
+        x: -1,
+        y: -1
+      });
+    }
+  }
+
+  // //Sample pixels in the resized image, remembering the whitest ones in each region
+  resized.scan(0, 0, resized.bitmap.width, resized.bitmap.height, (x, y, idx) => {
+    const regCol = Math.floor(x/resizedRegionSize.width);
+    const regRow = Math.floor(y/resizedRegionSize.height);
+    const color = [resized.bitmap.data[idx], resized.bitmap.data[idx+1], resized.bitmap.data[idx+2]];
+    const whiteDist = colorDistance([255, 255, 255], color);
+    if(whiteDist < whitestPixels[regCol][regRow].whiteDist) {
+      whitestPixels[regCol][regRow] = {
+        whiteDist: whiteDist,
+        color: color,
+        x: x,
+        y: y
+      }
+    }
+  });
+
+  //Define a function to correct for white balance
+  const componentInterpolators = [0, 1, 2].map(compIdx => {
+    return bicubicSample((x, y) => {
+      x = clamp(x, 0, numRegions.x-1);
+      y = clamp(y, 0, numRegions.y-1);
+      return whitestPixels[x][y].color[compIdx];
+    });
+  });
+  const whiteBal = (x, y, color) => {
+    const regCol = Math.floor(x/fullRegionSize.width);
+    const regRow = Math.floor(y/fullRegionSize.height);
+    const regX = (x/fullRegionSize.width)-0.5;
+    const regY = (y/fullRegionSize.height)-0.5;
+
+    var whiteColor/* = whitestPixels[regCol][regRow].color*/;
+    if(regX === 0 || regX === numRegions.x-1 || regY === 0 || regY === numRegions.y-1) {
+      whiteColor = whitestPixels[regCol][regRow].color;
+    }else {
+      whiteColor = [0, 1, 2].map(compIdx => {
+        return componentInterpolators[compIdx](regX, regY);
+      });
+    }
+
+    return color.map((val, index) => {
+      return clamp(val * (255/(whiteColor[index])), 0, 255);
+    });
+  };
+
+  //Correct for white balance on all the pixels
+  image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x, y, idx) => {
+    const color = [image.bitmap.data[idx], image.bitmap.data[idx+1], image.bitmap.data[idx+2]];
+    const corrected = whiteBal(x, y, color);
+    image.bitmap.data[idx+0] = corrected[0];
+    image.bitmap.data[idx+1] = corrected[1];
+    image.bitmap.data[idx+2] = corrected[2];
   });
 
   return image;

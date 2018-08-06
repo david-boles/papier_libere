@@ -1,0 +1,14 @@
+/*
+This is a built version of bicubic-sample (including bicubic, https://github.com/hughsk/bicubic-sample) The following is a copy of their license:
+
+The MIT License (MIT)
+
+Copyright (c) 2013 Hugh Kennedy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+var bicubicSample=function(e){var r={};function t(n){if(r[n])return r[n].exports;var o=r[n]={i:n,l:!1,exports:{}};return e[n].call(o.exports,o,o.exports,t),o.l=!0,o.exports}return t.m=e,t.c=r,t.d=function(e,r,n){t.o(e,r)||Object.defineProperty(e,r,{enumerable:!0,get:n})},t.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},t.t=function(e,r){if(1&r&&(e=t(e)),8&r)return e;if(4&r&&"object"==typeof e&&e&&e.__esModule)return e;var n=Object.create(null);if(t.r(n),Object.defineProperty(n,"default",{enumerable:!0,value:e}),2&r&&"string"!=typeof e)for(var o in e)t.d(n,o,function(r){return e[r]}.bind(null,o));return n},t.n=function(e){var r=e&&e.__esModule?function(){return e.default}:function(){return e};return t.d(r,"a",r),r},t.o=function(e,r){return Object.prototype.hasOwnProperty.call(e,r)},t.p="",t(t.s=0)}([function(e,r,t){var n=t(1),o=Math.floor;e.exports=function(e){return function(r,t){var u=o(r),i=o(t),f=u+1,c=i+1,l=e(u-1,i-1),a=e(u-1,i),p=e(u-1,c),d=e(u-1,c+1),b=e(u,i-1),s=e(u,i),v=e(u,c),y=e(u,c+1),j=e(f,i-1),m=e(f,i),x=e(f,c),O=e(f,c+1),g=e(f+1,i-1),S=e(f+1,i),_=e(f+1,c),M=e(f+1,c+1);return n(r-u,t-i,l,b,j,g,a,s,m,S,p,v,x,_,d,y,O,M)}}},function(e,r){e.exports=function(e,r,t,n,o,u,i,f,c,l,a,p,d,b,s,v,y,j){var m=r*r,x=e*e,O=e*x,g=u-o-t+n,S=g*O+(t-n-g)*x+(o-t)*e+n,_=l-c-i+f,M=_*O+(i-f-_)*x+(c-i)*e+f,P=b-d-a+p,h=P*O+(a-p-P)*x+(d-a)*e+p,T=j-y-s+v,w=T*O+(s-v-T)*x+(y-s)*e+v-h-S+M;return w*r*m+(S-M-w)*m+(h-S)*r+M}}]);
