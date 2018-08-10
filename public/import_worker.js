@@ -1,11 +1,11 @@
 importScripts('https://unpkg.com/jimp@0.2.27/browser/lib/jimp.min.js');
 importScripts('/lib/jsQR.js');
 importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-transform.min.js');
-importScripts('/lib/bicubic-sample.js');
+importScripts('https://unpkg.com/bicubic-interpolate@^1.0.0/dist/min.js');
 
-const roughPerspPPI = 100;
-const finalPerspPPI = 400;
-const whiteBalRegionsPI = 1;
+const roughPerspPPI = 50;
+const finalPerspPPI = 200;
+const whiteBalRegionsPI = 2;
 const whiteBalSamplesPI = 20;
 const config = {
   0: {//Standard paper - '0 PAPER_SIZE ORIENTATION QR_SIZE'
@@ -238,7 +238,7 @@ function detectCorners(image, qr) {
   const queue = [];
   const tryQueuing = (x, y) => {
     const idx = getJimpPixelIndex(x, y, roughTransImage);
-    if(roughTransImage.bitmap.data[idx] < 75 && !roughTransImage.bitmap.data[idx+1]) {
+    if(roughTransImage.bitmap.data[idx] < 65 && !roughTransImage.bitmap.data[idx+1]) {
       roughTransImage.bitmap.data[idx+1] = 255;
       queue.push({x: x, y: y});
       return true;
@@ -410,28 +410,16 @@ function correctWhiteBalance(image, qrData) {
   });
 
   //Define a function to correct for white balance
-  const componentInterpolators = [0, 1, 2].map(compIdx => {
-    return bicubicSample((x, y) => {
-      x = clamp(x, 0, numRegions.x-1);
-      y = clamp(y, 0, numRegions.y-1);
-      return whitestPixels[x][y].color[compIdx];
-    });
+  const regionWhites = whitestPixels.map(col => col.map(pix => pix.color));
+  const interpolator = bicubic.createMultiGridInterpolator(regionWhites, {
+    extrapolate: true,
+    scaleX: 1 / fullRegionSize.width,
+    scaleY: 1 / fullRegionSize.height,
+    translateX: -0.5,
+    translateY: -0.5
   });
   const whiteBal = (x, y, color) => {
-    const regCol = Math.floor(x/fullRegionSize.width);
-    const regRow = Math.floor(y/fullRegionSize.height);
-    const regX = (x/fullRegionSize.width)-0.5;
-    const regY = (y/fullRegionSize.height)-0.5;
-
-    var whiteColor/* = whitestPixels[regCol][regRow].color*/;
-    if(regX === 0 || regX === numRegions.x-1 || regY === 0 || regY === numRegions.y-1) {
-      whiteColor = whitestPixels[regCol][regRow].color;
-    }else {
-      whiteColor = [0, 1, 2].map(compIdx => {
-        return componentInterpolators[compIdx](regX, regY);
-      });
-    }
-
+    const whiteColor = interpolator(x, y);
     return color.map((val, index) => {
       return clamp(val * (255/(whiteColor[index])), 0, 255);
     });
@@ -484,7 +472,7 @@ function getJimpPixelIndex(x, y, image, clampXY = true) {
 }
 
 function debugDisplay(image) {
-  if(false) {
+  if(true) {
     this.postMessage(['debug', image.bitmap]);
   }
 }
