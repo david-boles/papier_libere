@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<widget xmlns   = "http://www.w3.org/ns/widgets"
+    xmlns:gap   = "http://phonegap.com/ns/1.0"
+    id          = "com.papierlibere"
+    version     = "0.0.18" >
+
+<!-- versionCode is optional and Android only -->
+
+  <name>Papier Libéré</name>
+
+  <description>
+      An open source smart paper ecosystem.
+  </description>
+
+  <author href="https://www.davidbol.es" email="me@davidbol.es">
+      David Boles
+  </author>
+
+  <platform name="android" />
+  <preference name="android-targetSdkVersion" value="26" />
+
+</widget>
