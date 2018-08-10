@@ -116,24 +116,19 @@ function continueProcessing(srcImage, qrData, corners) {
 
 
 function readQR(image) {
-  var qr = jsQR(image.bitmap.data, image.bitmap.width, image.bitmap.height, {retrieveColors: true});
+  const resized = image.clone().resize(image.bitmap.width/3.5, Jimp.AUTO);
+  qr = jsQR(resized.bitmap.data, resized.bitmap.width, resized.bitmap.height, {retrieveColors: true});
 
   if(qr) {
+    for(var key in qr.location) {
+      qr.location[key].x *= 3.5;
+      qr.location[key].y *= 3.5;
+    }
     return qr;
 
   }else {
-    console.log("QR code not found, trying a resize...");
-    const resized = image.clone().resize(image.bitmap.width/3.5, Jimp.AUTO);
-    qr = jsQR(resized.bitmap.data, resized.bitmap.width, resized.bitmap.height, {retrieveColors: true});
-
-    if(qr) {
-      for(var key in qr.location) {
-        qr.location[key].x *= 3.5;
-        qr.location[key].y *= 3.5;
-      }
-
-      return qr;
-    }
+    console.log('not found with resized, trying original');
+    return jsQR(image.bitmap.data, image.bitmap.width, image.bitmap.height, {retrieveColors: true});
   }
 }
 
