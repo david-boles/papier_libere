@@ -41,6 +41,8 @@ const config = {
       {x: 0.75*roughPerspPPI, y: -0.625*roughPerspPPI},
       {x: -0.25*roughPerspPPI, y: -0.625*roughPerspPPI},
       {x: 0.75*roughPerspPPI, y: -1.625*roughPerspPPI},
+      {x: 0.875*roughPerspPPI, y: 0.375*roughPerspPPI},
+      {x: 0.875*roughPerspPPI, y: 0.875*roughPerspPPI}
     ],
     finalDimensions: {
       width: 7.125*finalPerspPPI,
@@ -50,7 +52,7 @@ const config = {
       tl: {x: 0.125*finalPerspPPI, y: 0.125*finalPerspPPI},
       tr: {x: 7*finalPerspPPI, y: 0.125*finalPerspPPI},
       bl: {x: 0.125*finalPerspPPI, y: 9.875*finalPerspPPI},
-      br: {x: 7*finalPerspPPI, y: 8.5*finalPerspPPI}
+      br: {x: 7*finalPerspPPI, y: 9.875*finalPerspPPI}
     },
     whiteBalRegions: {
       x: Math.ceil(7.125*whiteBalRegionsPI),
@@ -236,9 +238,9 @@ function detectCorners(image, qr) {
   
   //Starting from the corner detection seed points, flood fill the page, checking whether a point is a corner
   const queue = [];
-  const tryQueuing = (x, y) => {
+  const tryQueuing = (x, y, comparisonVal, force=false) => {
     const idx = getJimpPixelIndex(x, y, roughTransImage);
-    if(roughTransImage.bitmap.data[idx] < 65 && !roughTransImage.bitmap.data[idx+1]) {
+    if(force || (Math.abs(roughTransImage.bitmap.data[idx]-comparisonVal) < 5 && !roughTransImage.bitmap.data[idx+1])) {
       roughTransImage.bitmap.data[idx+1] = 255;
       queue.push({x: x, y: y});
       return true;
@@ -248,7 +250,7 @@ function detectCorners(image, qr) {
   cornerSeedOffsets.forEach(offset => {
     const x = Math.round(offset.x-mostLeft);
     const y = Math.round(offset.y-mostUp);
-    if(tryQueuing(x, y)) {//This just helps with debugging
+    if(tryQueuing(x, y, 0, true)) {//This just helps with debugging
       roughTransImage.bitmap.data[getJimpPixelIndex(x, y, roughTransImage) + 2] = 255;
     }
   });
@@ -270,10 +272,11 @@ function detectCorners(image, qr) {
   while(queue.length != 0) {
     var loc = queue.shift();
     updateMaxima(loc);
-    tryQueuing(loc.x+1, loc.y);
-    tryQueuing(loc.x-1, loc.y);
-    tryQueuing(loc.x, loc.y+1);
-    tryQueuing(loc.x, loc.y-1);
+    const val = roughTransImage.bitmap.data[getJimpPixelIndex(loc.x, loc.y, roughTransImage)];
+    tryQueuing(loc.x+1, loc.y, val);
+    tryQueuing(loc.x-1, loc.y, val);
+    tryQueuing(loc.x, loc.y+1, val);
+    tryQueuing(loc.x, loc.y-1, val);
   }
 
   debugDisplay(roughTransImage);
