@@ -15,18 +15,52 @@ import CloseIcon from '@material-ui/icons/Close';
 import Slide from '@material-ui/core/Slide';
 import Fade from '@material-ui/core/Fade';
 import Overrider from './Overrider';
+import RotateLeftOutlined from '@material-ui/icons/RotateLeftOutlined';
+import RotateRightOutlined from '@material-ui/icons/RotateRightOutlined';
+import NoteAddOutlined from '@material-ui/icons/NoteAddOutlined';
+import EmailOutlined from '@material-ui/icons/EmailOutlined';
+import FolderSpecialOutlined from '@material-ui/icons/FolderSpecialOutlined';
+import CreateOutlined from '@material-ui/icons/CreateOutlined';
+import PersonOutlined from '@material-ui/icons/PersonOutlined';
+import ModeCommentOutlined from '@material-ui/icons/ModeCommentOutlined';
+import KitchenOutlined from '@material-ui/icons/KitchenOutlined';
+import ShowChartOutlined from '@material-ui/icons/ShowChartOutlined';
+import StraightenOutlined from '@material-ui/icons/StraightenOutlined';
+import BusinessCenterOutlined from '@material-ui/icons/BusinessCenterOutlined';
+import CloudOutlined from '@material-ui/icons/CloudOutlined';
+import BugReportOutlined from '@material-ui/icons/BugReportOutlined';
+import WavesOutlined from '@material-ui/icons/WavesOutlined';
+import DonutSmallOutlined from '@material-ui/icons/DonutSmallOutlined';
+import AcUnitOutlined from '@material-ui/icons/AcUnitOutlined';
+import PublicOutlined from '@material-ui/icons/PublicOutlined';
+
+const actionIcons = [
+  <RotateLeftOutlined/>,
+  <RotateRightOutlined/>,
+  <NoteAddOutlined/>,
+  <EmailOutlined/>,
+  <FolderSpecialOutlined/>,
+  <CreateOutlined/>,
+  <PersonOutlined/>,
+  <ModeCommentOutlined/>,
+  <KitchenOutlined/>,
+  <ShowChartOutlined/>,
+  <StraightenOutlined/>,
+  <BusinessCenterOutlined/>,
+  <CloudOutlined/>,
+  <BugReportOutlined/>,
+  <WavesOutlined/>,
+  <DonutSmallOutlined/>,
+  <AcUnitOutlined/>,
+  <PublicOutlined/>,
+];
 
 class Importer extends Component {
   constructor(props) {
     super(props);
     this.state = {
       dragEntered: false,
-      importing: [/*{
-        fileName: 'hi',
-        name: 'hi',
-        progress: 'error',
-        progressTooltip: 'This is a test.'
-      }*/],
+      importing: [],
       overriding: false,
       overrider: ''
     }
@@ -56,6 +90,20 @@ class Importer extends Component {
                   <CardContent>
                     <TextField defaultValue={imgImport.name} fullWidth={true} onInput={e=>{const importing = this.state.importing; importing[index].name = e.target.value; this.setState({importing: importing})}}/>
                   </CardContent>
+
+                  <div style={{padding: '0 24px'}}>
+                    <Grid container direction='column' alignItems='flex-start' /*spacing={8}*/ style={{overflowX: 'auto', height: 96, width: 192}}>
+                      {
+                        imgImport.actions.map((enabled, actionIndex) => {const actionIcon = actionIcons[actionIndex]; return (
+                          <Grid item key={actionIndex}>
+                            <IconButton style={{width: 32, height: 32, color: enabled? 'white' : 'rgba(0, 0, 0, 0.54)', backgroundColor: enabled? 'rgba(0, 0, 0, 0.54)' : 'unset'}} onClick={()=>{const importing = this.state.importing; importing[index].actions[actionIndex] = !importing[index].actions[actionIndex]; this.setState({importing: importing});}}>
+                              {actionIcon}
+                            </IconButton>
+                          </Grid>
+                        )})
+                      }
+                    </Grid>
+                  </div>
 
                   <CardActions>
                     <div style={{flexGrow: 1}}>
@@ -143,6 +191,7 @@ class Importer extends Component {
       const index = newImporting.push({
         fileName: file.name,
         name: file.name.split('.')[0],
+        actions: (()=>{const out = []; for(var i = 0; i < 18; i++) out.push(false); return out;})(),
         progress: 'indeterminate',
         progressTooltip: 'Loading...',
         worker: new Worker('/import_worker.js')
@@ -183,11 +232,18 @@ class Importer extends Component {
           console.log(e.data[1])
           break;
 
-          case 'corners':
-            importing[index].corners = e.data[1];
-            this.setState({importing: importing});
-            console.log(e.data[1])
-            break;
+        case 'corners':
+          importing[index].corners = e.data[1];
+          this.setState({importing: importing});
+          console.log(e.data[1])
+          break;
+
+        case 'actions':
+          console.log(e.data[1]);
+          for(var i = 0; i < importing[index].actions.length; i++) {
+            importing[index].actions[i] = importing[index].actions[i] || e.data[1][i];
+          }
+          break;
 
         case 'done':
           importing[index].finalBitmap = e.data[1];

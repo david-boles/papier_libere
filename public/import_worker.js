@@ -58,7 +58,14 @@ const config = {
       x: Math.ceil(7.125*whiteBalRegionsPI),
       y: Math.ceil(10*whiteBalRegionsPI)
     },
-    whiteBalScaleFactor: whiteBalSamplesPI/finalPerspPPI
+    whiteBalScaleFactor: whiteBalSamplesPI/finalPerspPPI,
+    actions: {
+      first: {x: 3.458*finalPerspPPI, y: 8.833*finalPerspPPI},//Offset for the center of the top left icon in a grid, measured from the top left of the QR code (up is -y)
+      radius: 0.1565*finalPerspPPI,
+      gridWidth: 6,
+      gridHeight: 3,
+      spacing: 0.417*finalPerspPPI
+    }
   }
 }
 
@@ -108,8 +115,14 @@ function continueProcessing(srcImage, qrData, corners) {
   var image = correctForPerspective(srcImage, qrData, corners);
   debugDisplay(image);
 
-  postMessage(['progress', 80, 'Correcting white balance...']);
+  postMessage(['progress', 70, 'Correcting white balance...']);
   image = correctWhiteBalance(image, qrData);
+
+  if(qrData.indexOf('1 ') === 0) {
+    postMessage(['progress', 90, 'Detecting actions...'])
+    postMessage(['actions', detectActions(image, qrData)]);
+  }
+
   postMessage(['done', image.bitmap]);
 }
 
@@ -437,6 +450,49 @@ function correctWhiteBalance(image, qrData) {
 
 
 
+function detectActions(image, qrData) {
+  //Find the locations and size of the icons
+  const qrDataSplit = qrData.split(' ');
+  var gridConfig;
+  switch(Number(qrDataSplit[0])) {
+    case 1:
+      gridConfig = config[1].actions;
+      break;
+    default:
+      throw 'invalid page type for white balance';
+  }
+
+  const output = [];
+
+  for(var iX = 0; iX < gridConfig.gridWidth; iX++) {
+    for(var iY = 0; iY < gridConfig.gridHeight; iY++) {
+      const center = Object.assign({}, gridConfig.first);
+      center.x += iX * gridConfig.spacing;
+      center.y += iY * gridConfig.spacing;
+
+      var pxCounter = 0;
+      var distSum = 0;
+
+      for(var x = center.x-gridConfig.radius; x < center.x+gridConfig.radius; x++) {
+        var yLimit = Math.sqrt((gridConfig.radius*gridConfig.radius)-((x-center.x)*(x-center.x)));
+
+        for(var y = center.y-yLimit; y < center.y+yLimit; y++) {
+          const idx = getJimpPixelIndex(x, y, image);
+          distSum += colorDistance(image.bitmap.data.slice(idx, idx+3), [255, 255, 255]);
+          pxCounter++;
+        }
+      }
+
+      if(distSum/pxCounter > 25) output.push(true);
+      else output.push(false);
+    }
+  }
+
+  return output;
+}
+
+
+
 //UTILS
 function colorDistance(c1, c2) {
   var r = (c1[0] + c2[0])/2;
@@ -470,7 +526,7 @@ function getJimpPixelIndex(x, y, image, clampXY = true) {
 }
 
 function debugDisplay(image) {
-  if(true) {
+  if(false) {
     this.postMessage(['debug', image.bitmap]);
   }
 }
