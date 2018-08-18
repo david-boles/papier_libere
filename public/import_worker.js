@@ -69,6 +69,8 @@ const config = {
   }
 }
 
+
+
 onmessage = (e) => {
   if(e.data.length === 1) {//Processing a raw image buffer for the first time
     Jimp.read(e.data[0], (err, srcImage) => {
@@ -108,25 +110,7 @@ onmessage = (e) => {
 
 
 
-async function continueProcessing(srcImage, qrData, corners) {
-  var overlay;
-  if(qrData.indexOf('1 ') === 0) {
-    overlay = new Promise(async function(resolve, reject) {
-      try {
-        console.log('fetching overlay');
-        const overlayPromise = Jimp.read('/assets/notebook_overlay.png');
-        console.log(overlayPromise);
-        const img = await overlayPromise;
-        console.log('resolved');
-        console.log(img.bitmap.height);
-        resolve(img/*'cheese'*/);
-      }catch(e) {
-        console.log(e)
-        reject();
-      }
-    });
-  }
-
+function continueProcessing(srcImage, qrData, corners) {
   postMessage(['progress', 55, 'Correcting for perspective...']);
   var image = correctForPerspective(srcImage, qrData, corners);
   debugDisplay(image);
@@ -138,12 +122,6 @@ async function continueProcessing(srcImage, qrData, corners) {
     postMessage(['progress', 90, 'Detecting actions...'])
     postMessage(['actions', detectActions(image, qrData)]);
   }
-
-  try{
-  console.log(overlay);
-  const overlayImg = await overlay;
-  console.log(overlayImg);
-  }catch(e){console.log(e)}
 
   postMessage(['done', image.bitmap]);
 }
