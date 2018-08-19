@@ -204,14 +204,6 @@ class Importer extends Component {
         </Dialog>
 
         <Dialog
-          fullScreen
-          open={this.state.deleting !== false}
-          onClose={()=>{this.setState({deleting: false})}}
-        >
-          {this.state.overrider}
-        </Dialog>
-
-        <Dialog
           // disableBackdropClick
           // disableEscapeKeyDown
           maxWidth="xs"
