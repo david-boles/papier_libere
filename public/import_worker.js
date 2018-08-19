@@ -123,17 +123,7 @@ function continueProcessing(srcImage, qrData, corners) {
     postMessage(['actions', detectActions(image, qrData)]);
   }
 
-  try{
-    console.log(location.href.substring(0, location.href.lastIndexOf('/')) + '/assets/notebook_overlay.png');
-    Jimp.read(location.href.substring(0, location.href.lastIndexOf('/')) + '/assets/notebook_overlay.png').then(image => {
-      postMessage(['done', image.bitmap]);
-    }).catch((e) => {
-      console.log(e);
-      postMessage(['done', image.bitmap]);
-    });
-  }catch(e){console.error(e)}
-
-  // postMessage(['done', image.bitmap]);
+  postMessage(['done', image.bitmap]);
 }
 
 
@@ -533,30 +523,6 @@ function getPixelIndex(x, y, width, height, elmtsPerPix = 4, clampXY = true) {
 
 function getJimpPixelIndex(x, y, image, clampXY = true) {
   return getPixelIndex(x, y, image.bitmap.width, image.bitmap.height, 4, clampXY);
-}
-
-function makeRequest(method, url) {
-  return new Promise(function (resolve, reject) {
-    var xhr = new XMLHttpRequest();
-    xhr.open(method, url);
-    xhr.onload = function () {
-      if (this.status >= 200 && this.status < 300) {
-        resolve(xhr.response);
-      } else {
-        reject({
-          status: this.status,
-          statusText: xhr.statusText
-        });
-      }
-    };
-    xhr.onerror = function () {
-      reject({
-        status: this.status,
-        statusText: xhr.statusText
-      });
-    };
-    xhr.send();
-  });
 }
 
 function debugDisplay(image) {
