@@ -2,6 +2,7 @@ importScripts('https://unpkg.com/jimp@0.2.27/browser/lib/jimp.min.js');
 importScripts('/lib/jsQR.js');
 importScripts('https://unpkg.com/perspective-transform@^1.1.3/dist/perspective-transform.min.js');
 importScripts('https://unpkg.com/bicubic-interpolate@^1.0.0/dist/min.js');
+importScripts('/lib/qr-image.js');
 
 const roughPerspPPI = 50;
 const finalPerspPPI = 200;
@@ -33,7 +34,27 @@ const config = {
         }
       }
     },
-    whiteBalScaleFactor: whiteBalSamplesPI/finalPerspPPI
+    whiteBalScaleFactor: whiteBalSamplesPI/finalPerspPPI,
+    qrOverlayRegion: {
+      LTR: {
+        P: {
+          x: 7.25*finalPerspPPI,
+          y: 9.75*finalPerspPPI,
+          length: 1.25*finalPerspPPI,
+          qrOffsetX: 0.25*finalPerspPPI,
+          qrOffsetY: 0.25*finalPerspPPI,
+          qrLength: 0.75*finalPerspPPI
+        },
+        L: {
+          x: 9.75*finalPerspPPI,
+          y: 7.25*finalPerspPPI,
+          length: 1.25*finalPerspPPI,
+          qrOffsetX: 0.25*finalPerspPPI,
+          qrOffsetY: 0.25*finalPerspPPI,
+          qrLength: 0.75*finalPerspPPI
+        }
+      }
+    }
   },
   1: {//Notebook - '1 PAGE_NUMBER'
     roughQRDimension: 0.75*roughPerspPPI,
@@ -65,6 +86,14 @@ const config = {
       gridWidth: 6,
       gridHeight: 3,
       spacing: 0.417*finalPerspPPI
+    },
+    qrOverlayRegion: {
+      x: 5.75*finalPerspPPI,
+      y: 8.625*finalPerspPPI,
+      length: 1.25*finalPerspPPI,
+      qrOffsetX: 0.25*finalPerspPPI,
+      qrOffsetY: 0.25*finalPerspPPI,
+      qrLength: 0.75*finalPerspPPI
     }
   }
 }
@@ -72,7 +101,7 @@ const config = {
 
 
 onmessage = (e) => {
-  if(e.data.length === 1) {//Processing a raw image buffer for the first time
+  if(e.data.length === 2) {//Processing a raw image buffer for the first time
     Jimp.read(e.data[0], (err, srcImage) => {
       if(err) {
         postMessage(['progress', 'error', 'An error occured while importing the image!']);
@@ -87,7 +116,7 @@ onmessage = (e) => {
           postMessage(['progress', 45, 'Detecting corners...']);
           const corners = detectCorners(srcImage, qr);
           postMessage(['corners', corners]);
-          continueProcessing(srcImage, qr.data, corners);
+          continueProcessing(srcImage, qr.data, corners, e.data[1]);
         }else {
           postMessage(['progress', 'error', 'No QR code was found.']);
         }
@@ -100,7 +129,7 @@ onmessage = (e) => {
       console.log('Starting a re-process, presumably something was overriden');
       srcImage = new Jimp(e.data[0].width, e.data[0].height);
       srcImage.bitmap = e.data[0];
-      continueProcessing(srcImage, e.data[1], e.data[2]);
+      continueProcessing(srcImage, e.data[1], e.data[2], e.data[3]);
       close();
     }catch(e) {
       console.log(e);
@@ -110,18 +139,21 @@ onmessage = (e) => {
 
 
 
-function continueProcessing(srcImage, qrData, corners) {
+function continueProcessing(srcImage, qrData, corners, notebookOverlay) {
   postMessage(['progress', 55, 'Correcting for perspective...']);
   var image = correctForPerspective(srcImage, qrData, corners);
   debugDisplay(image);
 
-  postMessage(['progress', 70, 'Correcting white balance...']);
+  postMessage(['progress', 65, 'Correcting white balance...']);
   image = correctWhiteBalance(image, qrData);
 
   if(qrData.indexOf('1 ') === 0) {
-    postMessage(['progress', 90, 'Detecting actions...'])
+    postMessage(['progress', 90, 'Detecting actions...']);
     postMessage(['actions', detectActions(image, qrData)]);
   }
+
+  postMessage(['progress', 95, 'Applying overlays...']);
+  image = applyOverlays(image, qrData, notebookOverlay);
 
   postMessage(['done', image.bitmap]);
 }
@@ -130,7 +162,7 @@ function continueProcessing(srcImage, qrData, corners) {
 
 function readQR(image) {
   const resized = image.clone().resize(image.bitmap.width/3.5, Jimp.AUTO);
-  qr = jsQR(resized.bitmap.data, resized.bitmap.width, resized.bitmap.height, {retrieveColors: true});
+  const qr = jsQR(resized.bitmap.data, resized.bitmap.width, resized.bitmap.height, {retrieveColors: true});
 
   if(qr) {
     for(var key in qr.location) {
@@ -489,6 +521,66 @@ function detectActions(image, qrData) {
   }
 
   return output;
+}
+
+
+
+function applyOverlays(image, qrData, notebookOverlay) {
+  //Apply the icon and edge overlay for notebooks
+  if(qrData.indexOf('1 ') === 0) {
+    image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x, y, idx) => {
+      if(notebookOverlay.data[idx+3]) {
+        image.bitmap.data[idx] = notebookOverlay.data[idx];
+        image.bitmap.data[idx+1] = notebookOverlay.data[idx+1];
+        image.bitmap.data[idx+2] = notebookOverlay.data[idx+2];
+      }
+    });
+  }
+
+  //Figure out position and size of the qr region and the qr itself
+  const qrDataSplit = qrData.split(' ');
+
+  var qrRegion;
+  switch(Number(qrDataSplit[0])) {
+    case 0: 
+      qrRegion = config[0].qrOverlayRegion[qrDataSplit[1]]['P'/* TODO qrDataSplit[2]*/];//TODO calculate based on QR size
+      break;
+    case 1:
+      qrRegion = config[1].qrOverlayRegion;
+      break;
+    default:
+      throw 'invalid page type for overlays';
+  }
+
+  const qrMatrix = qr.matrix(qrData, 'H');
+  console.log(qr.matrix);
+
+  for(var x = qrRegion.x; x < qrRegion.x + qrRegion.length; x++) {
+    for(var y = qrRegion.y; y < qrRegion.y + qrRegion.length; y++) {
+      const idx = getJimpPixelIndex(x, y, image);
+
+      if(x < qrRegion.x + qrRegion.qrOffsetX || y < qrRegion.y + qrRegion.qrOffsetX || x > qrRegion.x + qrRegion.qrOffsetX + qrRegion.qrLength || y > qrRegion.y + qrRegion.qrOffsetX + qrRegion.qrLength) {
+        image.bitmap.data[idx] = 255;
+        image.bitmap.data[idx+1] = 255;
+        image.bitmap.data[idx+2] = 255;
+      }else {
+        const qrX = clamp(Math.floor((x - qrRegion.x - qrRegion.qrOffsetX)*(qrMatrix.length/qrRegion.qrLength)), 0, qrMatrix.length-1);
+        const qrY = clamp(Math.floor((y - qrRegion.y - qrRegion.qrOffsetY)*(qrMatrix.length/qrRegion.qrLength)), 0, qrMatrix.length-1);
+
+        if(qrMatrix[qrY][qrX]) {
+          image.bitmap.data[idx] = 0;
+          image.bitmap.data[idx+1] = 0;
+          image.bitmap.data[idx+2] = 0;
+        }else {
+          image.bitmap.data[idx] = 255;
+          image.bitmap.data[idx+1] = 255;
+          image.bitmap.data[idx+2] = 255;
+        }
+      }
+    }
+  }
+
+  return image;
 }
 
 

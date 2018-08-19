@@ -8,6 +8,7 @@ import TextField from '@material-ui/core/TextField';
 import Tooltip from '@material-ui/core/Tooltip';
 import Check from '@material-ui/icons/Check';
 import Warning from '@material-ui/icons/Warning';
+import Delete from '@material-ui/icons/Delete';
 import React, { Component } from 'react';
 import Dialog from '@material-ui/core/Dialog';
 import IconButton from '@material-ui/core/IconButton';
@@ -33,6 +34,8 @@ import WavesOutlined from '@material-ui/icons/WavesOutlined';
 import DonutSmallOutlined from '@material-ui/icons/DonutSmallOutlined';
 import AcUnitOutlined from '@material-ui/icons/AcUnitOutlined';
 import PublicOutlined from '@material-ui/icons/PublicOutlined';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogTitle from '@material-ui/core/DialogTitle';
 
 const actionIcons = [
   <RotateLeftOutlined/>,
@@ -62,8 +65,20 @@ class Importer extends Component {
       dragEntered: false,
       importing: [],
       overriding: false,
-      overrider: ''
+      overrider: '',
+      deleting: false
     }
+
+    this.notebookOverlay = (async () => {
+      const raw = await (await fetch('/assets/notebook_overlay.png')).blob();
+      const bitmap = await createImageBitmap(raw);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bitmap, 0, 0);
+      return ctx.getImageData(0, 0, canvas.width, canvas.height);
+    })();
   }
 
   render() {
@@ -81,7 +96,7 @@ class Importer extends Component {
           </Grid>
 
           {this.state.importing.map((imgImport, index) => {
-            return (
+            if(imgImport) return (
               <Grid item xs={10} s={9} md={8} lg={7} xl={6} key={index}>
                 <Card square={true}>
 
@@ -91,8 +106,8 @@ class Importer extends Component {
                     <TextField defaultValue={imgImport.name} fullWidth={true} onInput={e=>{const importing = this.state.importing; importing[index].name = e.target.value; this.setState({importing: importing})}}/>
                   </CardContent>
 
-                  <div style={{padding: '0 24px'}}>
-                    <Grid container direction='column' alignItems='flex-start' /*spacing={8}*/ style={{overflowX: 'auto', height: 96, width: 192}}>
+                  <div style={{paddingLeft: 16, paddingRight: 16}}>
+                    <Grid container direction='column' alignItems='flex-start' spacing={8} style={{overflowX: 'auto', minWidth: 240, height: 132, alignContent: 'center'}}>
                       {
                         imgImport.actions.map((enabled, actionIndex) => {const actionIcon = actionIcons[actionIndex]; return (
                           <Grid item key={actionIndex}>
@@ -107,9 +122,29 @@ class Importer extends Component {
 
                   <CardActions>
                     <div style={{flexGrow: 1}}>
+                      <div style={{height: 36, padding: '6px 16px 6px 8px', verticalAlign: 'middle', display: 'inline-block'}}>
+                        {
+                          imgImport.progress === 'indeterminate' || typeof imgImport.progress === 'number'?
+                            <Tooltip title={imgImport.progressTooltip}><CircularProgress variant={typeof imgImport.progress === 'number' ? 'static' : 'indeterminate'} value={typeof imgImport.progress === 'number' ? imgImport.progress : 0} size={24}/></Tooltip>
+                          : null
+                        }
+                        {
+                          imgImport.progress === 'done' ?
+                            <Tooltip title={imgImport.progressTooltip}><Check/></Tooltip>
+                          : null
+                        }
+                        {
+                          imgImport.progress === 'error'?
+                            <Tooltip title={imgImport.progressTooltip}><Warning/></Tooltip>
+                          : null
+                        }
+                      </div>
+                    </div>
+
+                    <div>
                       {
                         imgImport.sourceBitmap?
-                          <Button color="primary" onClick={()=>{this.setState({overriding: true, overrider: <Overrider import={imgImport} onClose={()=>{this.handleOverrideClose()}} onOverride={(qrData, corners)=>{
+                          <Button color="primary" style={{marginRight: 8}} onClick={()=>{this.setState({overriding: true, overrider: <Overrider import={imgImport} onClose={()=>{this.handleOverrideClose()}} onOverride={async (qrData, corners)=>{
                             this.handleOverrideClose();
 
                             const importing = this.state.importing;
@@ -121,37 +156,26 @@ class Importer extends Component {
                             importing[index].worker.onmessage = this.getWorkerHandler(index);
                             importing[index].qrData = qrData;
                             importing[index].corners = corners;
+
+                            const notebookOverlay = await this.notebookOverlay;
                             this.setState({importing: importing}, ()=>{
-                              importing[index].worker.postMessage([importing[index].sourceBitmap, qrData, corners]);
+                              importing[index].worker.postMessage([importing[index].sourceBitmap, qrData, corners, notebookOverlay]);
                             });
                           }}/>});}}>
                             override
                           </Button>
                         : null
                       }
-                    </div>
 
-                    <div style={{marginLeft: 20, marginRight: 16}}>
-                      {
-                        imgImport.progress === 'indeterminate' || typeof imgImport.progress === 'number'?
-                          <Tooltip title={imgImport.progressTooltip}><CircularProgress variant={typeof imgImport.progress === 'number' ? 'static' : 'indeterminate'} value={typeof imgImport.progress === 'number' ? imgImport.progress : 0} size={24}/></Tooltip>
-                        : null
-                      }
-                      {
-                        imgImport.progress === 'done' ?
-                          <Tooltip title={imgImport.progressTooltip}><Check/></Tooltip>
-                        : null
-                      }
-                      {
-                        imgImport.progress === 'error'?
-                          <Tooltip title={imgImport.progressTooltip}><Warning/></Tooltip>
-                        : null
-                      }
+                      <IconButton style={{width: 36, height: 36}} onClick={()=>{this.setState({deleting: index})}}>
+                        <Delete/>
+                      </IconButton>
                     </div>
                   </CardActions>
                 </Card>
               </Grid>
             );
+            else return null;
           })}
 
           <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
@@ -178,11 +202,41 @@ class Importer extends Component {
         >
           {this.state.overrider}
         </Dialog>
+
+        <Dialog
+          fullScreen
+          open={this.state.deleting !== false}
+          onClose={()=>{this.setState({deleting: false})}}
+        >
+          {this.state.overrider}
+        </Dialog>
+
+        <Dialog
+          // disableBackdropClick
+          // disableEscapeKeyDown
+          maxWidth="xs"
+          open={this.state.deleting !== false}
+        >
+          <DialogTitle>Are you sure you want to remove {this.state.deleting !== false? this.state.importing[this.state.deleting].name : ''}</DialogTitle>
+          <DialogActions>
+            <Button onClick={this.handleCancel} color='primary' onClick={()=>{this.setState({deleting: false})}}>
+              cancel
+            </Button>
+            <Button onClick={this.handleOk} variant='raised' color='secondary' onClick={()=>{
+              const importing = this.state.importing;
+              importing[this.state.deleting].worker.terminate();
+              importing[this.state.deleting] = false;
+              this.setState({importing: importing, deleting: false});
+            }}>
+              remove
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     );
   }
 
-  handleSelect(files) {
+  async handleSelect(files) {
     const newImporting = this.state.importing.slice();
 
     for(var i = 0; i < files.length; i++) {
@@ -199,9 +253,11 @@ class Importer extends Component {
 
       newImporting[index].worker.onmessage = this.getWorkerHandler(index);
 
+      const notebookOverlay = await this.notebookOverlay;
+
       var reader = new FileReader();
       reader.onload = e => {
-        newImporting[index].worker.postMessage([e.target.result]);
+        newImporting[index].worker.postMessage([e.target.result, notebookOverlay]);
       }
       reader.readAsArrayBuffer(file);
     }

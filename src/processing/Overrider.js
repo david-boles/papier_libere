@@ -51,7 +51,7 @@ class Overrider extends Component {
       }
       this.state.stage = 1;
     }
-    if(props.import.corners) this.state.corners = props.import.corners;
+    if(props.import.corners) this.state.corners = Object.assign({}, props.import.corners);
   }
 
   render() {
