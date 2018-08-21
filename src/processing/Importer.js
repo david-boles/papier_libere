@@ -36,6 +36,8 @@ import AcUnitOutlined from '@material-ui/icons/AcUnitOutlined';
 import PublicOutlined from '@material-ui/icons/PublicOutlined';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import Clear from '@material-ui/icons/Clear';
+import InputAdornment from '@material-ui/core/InputAdornment';
 
 const actionIcons = [
   <RotateLeftOutlined/>,
@@ -103,7 +105,31 @@ class Importer extends Component {
                   <canvas id={`display_canvas-${index}`} src="/scanned.png" style={{width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '500px', display: 'none'}}/>
 
                   <CardContent>
-                    <TextField defaultValue={imgImport.name} fullWidth={true} onInput={e=>{const importing = this.state.importing; importing[index].name = e.target.value; this.setState({importing: importing})}}/>
+                    <TextField
+                      id={`name_input-${index}`}
+                      value={imgImport.name}
+                      fullWidth={true} error={!imgImport.name}
+                      onInput={e=>{
+                        const importing = this.state.importing;
+                        importing[index].name = e.target.value;
+                        this.setState({importing: importing});
+                      }}
+                      InputProps={{endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={()=>{
+                              const importing = this.state.importing;
+                              importing[index].name = '';
+                              this.setState({importing: importing})
+                              document.getElementById(`name_input-${index}`).focus();
+                            }}
+                            style={{width: 32, height: 32}}
+                          >
+                            <Clear style={{width: 16, height: 16}}/>
+                          </IconButton>
+                        </InputAdornment>
+                      )}}
+                    />
                   </CardContent>
 
                   <div style={{paddingLeft: 16, paddingRight: 16}}>
@@ -185,7 +211,12 @@ class Importer extends Component {
                 this.state.importing.forEach(imgImport => {
                   allDone &= imgImport.progress === 'done'
                 })
-                return !allDone;
+                if(!allDone) return true;
+
+                const names = this.state.importing.map(imgImport => imgImport.name);
+                names.push('');//Also check for empty names
+                if(names.length !== new Set(names).size) return true;//Return false if duplicate names
+                return false;
               })()}>
                 export files
               </Button>

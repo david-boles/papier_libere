@@ -106,7 +106,7 @@ class Overrider extends Component {
                           return '';
                         }
                         return num;
-                      })()})}} type="number" InputProps={{startAdornment: <InputAdornment position="start">pg</InputAdornment>}} inputProps={{min: 1}} style={{marginLeft: 12, width: 80}}/>
+                      })()})}} type="number" InputProps={{startAdornment: <InputAdornment position="start">pg</InputAdornment>}} inputProps={{min: 1}} style={{marginLeft: 12, minWidth: 80, maxWidth: 120}}/>
                     : null
                   }
                 </React.Fragment>

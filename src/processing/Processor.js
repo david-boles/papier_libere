@@ -8,7 +8,7 @@ class Processor extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      view: <Importer/>,
+      view: <Importer processor={this}/>,
       direction: 'right',
       in: true
     }
