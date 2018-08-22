@@ -56,7 +56,10 @@ class App extends Component {
         <AppBar>
           <Toolbar variant="dense">
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
-              Papier Libéré - v0.0.25
+              Papier Libéré
+              <Typography variant='subheading' style={{display: 'inline', color: 'inherit', marginLeft: 8}}>
+                v0.1.0
+              </Typography>
             </Typography>
             {
               this.state.auth?
