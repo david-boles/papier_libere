@@ -95,13 +95,53 @@ const config = {
       qrOffsetY: 0.25*finalPerspPPI,
       qrLength: 0.75*finalPerspPPI
     }
+  },
+  2: {//Uncropped notebook - '2 PAGE_NUMBER'
+    roughQRDimension: 0.75*roughPerspPPI,
+    cornerSeedOffsets: [//Offsets for points at which to start the corner detection process, measured from the top left of the qr code (up is -y).
+      {x: 0.75*roughPerspPPI, y: -0.625*roughPerspPPI},
+      {x: -0.25*roughPerspPPI, y: -0.625*roughPerspPPI},
+      {x: 0.75*roughPerspPPI, y: -1.625*roughPerspPPI},
+      {x: 0.875*roughPerspPPI, y: 0.375*roughPerspPPI},
+      {x: 0.875*roughPerspPPI, y: 0.875*roughPerspPPI}
+    ],
+    finalDimensions: {
+      width: 8.375*finalPerspPPI,
+      height: 11*finalPerspPPI
+    },
+    finalCorners: {
+      tl: {x: 0.375*finalPerspPPI, y: 0.375*finalPerspPPI},
+      tr: {x: 8*finalPerspPPI, y: 0.375*finalPerspPPI},
+      bl: {x: 0.375*finalPerspPPI, y: 10.625*finalPerspPPI},
+      br: {x: 8*finalPerspPPI, y: 10.625*finalPerspPPI}
+    },
+    whiteBalRegions: {
+      x: Math.ceil(8.375*whiteBalRegionsPI),
+      y: Math.ceil(11*whiteBalRegionsPI)
+    },
+    whiteBalScaleFactor: whiteBalSamplesPI/finalPerspPPI,
+    actions: {
+      first: {x: 4.4585*finalPerspPPI, y: 9.5835*finalPerspPPI},//Offset for the center of the top left icon in a grid, measured from the top left of the QR code (up is -y)
+      radius: 0.1565*finalPerspPPI,
+      gridWidth: 6,
+      gridHeight: 3,
+      spacing: 0.417*finalPerspPPI
+    },
+    qrOverlayRegion: {
+      x: 6.75*finalPerspPPI,
+      y: 9.375*finalPerspPPI,
+      length: 1.25*finalPerspPPI,
+      qrOffsetX: 0.25*finalPerspPPI,
+      qrOffsetY: 0.25*finalPerspPPI,
+      qrLength: 0.75*finalPerspPPI
+    }
   }
 }
 
 
 
 onmessage = (e) => {
-  if(e.data.length === 2) {//Processing a raw image buffer for the first time
+  if(e.data.length === 3) {//Processing a raw image buffer for the first time
     Jimp.read(e.data[0], (err, srcImage) => {
       if(err) {
         postMessage(['progress', 'error', 'An error occured while importing the image!']);
@@ -116,7 +156,7 @@ onmessage = (e) => {
           postMessage(['progress', 45, 'Detecting corners...']);
           const corners = detectCorners(srcImage, qr);
           postMessage(['corners', corners]);
-          continueProcessing(srcImage, qr.data, corners, e.data[1]);
+          continueProcessing(srcImage, qr.data, corners, e.data[1], e.data[2]);
         }else {
           postMessage(['progress', 'error', 'No QR code was found.']);
         }
@@ -129,7 +169,7 @@ onmessage = (e) => {
       console.log('Starting a re-process, presumably something was overriden');
       srcImage = new Jimp(e.data[0].width, e.data[0].height);
       srcImage.bitmap = e.data[0];
-      continueProcessing(srcImage, e.data[1], e.data[2], e.data[3]);
+      continueProcessing(srcImage, e.data[1], e.data[2], e.data[3], e.data[4]);
       close();
     }catch(e) {
       console.log(e);
@@ -139,7 +179,7 @@ onmessage = (e) => {
 
 
 
-function continueProcessing(srcImage, qrData, corners, notebookOverlay) {
+function continueProcessing(srcImage, qrData, corners, notebookOverlay, notebookOverlayUncropped) {
   postMessage(['progress', 55, 'Correcting for perspective...']);
   var image = correctForPerspective(srcImage, qrData, corners);
   debugDisplay(image);
@@ -147,13 +187,13 @@ function continueProcessing(srcImage, qrData, corners, notebookOverlay) {
   postMessage(['progress', 65, 'Correcting white balance...']);
   image = correctWhiteBalance(image, qrData);
 
-  if(qrData.indexOf('1 ') === 0) {
+  if(qrData.indexOf('1 ') === 0 || qrData.indexOf('2 ' === 0)) {
     postMessage(['progress', 90, 'Detecting actions...']);
     postMessage(['actions', detectActions(image, qrData)]);
   }
 
   postMessage(['progress', 95, 'Applying overlays...']);
-  image = applyOverlays(image, qrData, notebookOverlay);
+  image = applyOverlays(image, qrData, notebookOverlay, notebookOverlayUncropped);
 
   postMessage(['done', image.bitmap]);
 }
@@ -182,9 +222,10 @@ function readQR(image) {
 function detectCorners(image, qr) {
   //Figure out how big the QR code should be for the rough transformation and where page corner detection should start
   const qrDataSplit = qr.data.split(' ');
+  const type = Number(qrDataSplit[0]);
 
   var roughQRDimension, cornerSeedOffsets;
-  switch(Number(qrDataSplit[0])) {
+  switch(type) {
     case 0: 
       roughQRDimension = (qrDataSplit[3]/100)*roughPerspPPI;
       cornerSeedOffsets = [
@@ -199,8 +240,9 @@ function detectCorners(image, qr) {
       ];
       break;
     case 1:
-      roughQRDimension = config[1].roughQRDimension;
-      cornerSeedOffsets = config[1].cornerSeedOffsets;
+    case 2:
+      roughQRDimension = config[type].roughQRDimension;
+      cornerSeedOffsets = config[type].cornerSeedOffsets;
       break;
     default:
       throw 'invalid page type for corners';
@@ -343,9 +385,10 @@ function detectCorners(image, qr) {
 function correctForPerspective(image, qrData, corners) {
   //Figure out how big the image should be for the final transformation and where page corners should go.
   const qrDataSplit = qrData.split(' ');
+  const type = Number(qrDataSplit[0]);
 
   var finalDimensions, finalCorners;
-  switch(Number(qrDataSplit[0])) {
+  switch(type) {
     case 0: 
       finalDimensions = config[0].finalDimensions[qrDataSplit[1]]['P'/* TODO qrDataSplit[2]*/];
       finalCorners = {
@@ -356,8 +399,9 @@ function correctForPerspective(image, qrData, corners) {
       };
       break;
     case 1:
-      finalDimensions = config[1].finalDimensions;
-      finalCorners = config[1].finalCorners;
+    case 2:
+      finalDimensions = config[type].finalDimensions;
+      finalCorners = config[type].finalCorners;
       break;
     default:
       throw 'invalid page type for final transformation';
@@ -395,15 +439,18 @@ function correctForPerspective(image, qrData, corners) {
 function correctWhiteBalance(image, qrData) {
   //Find the number of regions in the x and y direcitons based on the type of scan
   const qrDataSplit = qrData.split(' ');
+  const type = Number(qrDataSplit[0]);
+
   var numRegions, scaleFactor;
-  switch(Number(qrDataSplit[0])) {
+  switch(type) {
     case 0: 
       numRegions = config[0].whiteBalRegions[qrDataSplit[1]]['P'/* TODO qrDataSplit[2]*/];
       scaleFactor = config[0].whiteBalScaleFactor;
       break;
     case 1:
-      numRegions = config[1].whiteBalRegions;
-      scaleFactor = config[1].whiteBalScaleFactor;
+    case 2:
+      numRegions = config[type].whiteBalRegions;
+      scaleFactor = config[type].whiteBalScaleFactor;
       break;
     default:
       throw 'invalid page type for white balance';
@@ -485,10 +532,13 @@ function correctWhiteBalance(image, qrData) {
 function detectActions(image, qrData) {
   //Find the locations and size of the icons
   const qrDataSplit = qrData.split(' ');
+  const type = Number(qrDataSplit[0]);
+  
   var gridConfig;
-  switch(Number(qrDataSplit[0])) {
+  switch(type) {
     case 1:
-      gridConfig = config[1].actions;
+    case 2:
+      gridConfig = config[type].actions;
       break;
     default:
       throw 'invalid page type for white balance';
@@ -525,28 +575,33 @@ function detectActions(image, qrData) {
 
 
 
-function applyOverlays(image, qrData, notebookOverlay) {
+function applyOverlays(image, qrData, notebookOverlay, notebookOverlayUncropped) {
   //Apply the icon and edge overlay for notebooks
-  if(qrData.indexOf('1 ') === 0) {
+  function applyOverlay(overlay) {
     image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x, y, idx) => {
-      if(notebookOverlay.data[idx+3]) {
-        image.bitmap.data[idx] = notebookOverlay.data[idx];
-        image.bitmap.data[idx+1] = notebookOverlay.data[idx+1];
-        image.bitmap.data[idx+2] = notebookOverlay.data[idx+2];
+      if(overlay.data[idx+3]) {
+        image.bitmap.data[idx] = overlay.data[idx];
+        image.bitmap.data[idx+1] = overlay.data[idx+1];
+        image.bitmap.data[idx+2] = overlay.data[idx+2];
       }
     });
   }
 
+  if(qrData.indexOf('1 ') === 0) applyOverlay(notebookOverlay);
+  if(qrData.indexOf('2 ') === 0) applyOverlay(notebookOverlayUncropped);
+
   //Figure out position and size of the qr region and the qr itself
   const qrDataSplit = qrData.split(' ');
+  const type = Number(qrDataSplit[0]);
 
   var qrRegion;
-  switch(Number(qrDataSplit[0])) {
+  switch(type) {
     case 0: 
       qrRegion = config[0].qrOverlayRegion[qrDataSplit[1]]['P'/* TODO qrDataSplit[2]*/];//TODO calculate based on QR size
       break;
     case 1:
-      qrRegion = config[1].qrOverlayRegion;
+    case 2:
+      qrRegion = config[type].qrOverlayRegion;
       break;
     default:
       throw 'invalid page type for overlays';

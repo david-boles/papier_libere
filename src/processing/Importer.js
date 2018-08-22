@@ -71,16 +71,8 @@ class Importer extends Component {
       deleting: false
     }
 
-    this.notebookOverlay = (async () => {
-      const raw = await (await fetch('/assets/notebook_overlay.png')).blob();
-      const bitmap = await createImageBitmap(raw);
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(bitmap, 0, 0);
-      return ctx.getImageData(0, 0, canvas.width, canvas.height);
-    })();
+    this.notebookOverlay = loadImageData('/assets/notebook_overlay.png');
+    this.notebookOverlayUncropped = loadImageData('/assets/notebook_overlay-uncropped.png');
   }
 
   render() {
@@ -184,8 +176,9 @@ class Importer extends Component {
                             importing[index].corners = corners;
 
                             const notebookOverlay = await this.notebookOverlay;
+                            const notebookOverlayUncropped = await this.notebookOverlayUncropped;
                             this.setState({importing: importing}, ()=>{
-                              importing[index].worker.postMessage([importing[index].sourceBitmap, qrData, corners, notebookOverlay]);
+                              importing[index].worker.postMessage([importing[index].sourceBitmap, qrData, corners, notebookOverlay, notebookOverlayUncropped]);
                             });
                           }}/>});}}>
                             override
@@ -277,10 +270,11 @@ class Importer extends Component {
       newImporting[index].worker.onmessage = this.getWorkerHandler(index);
 
       const notebookOverlay = await this.notebookOverlay;
+      const notebookOverlayUncropped = await this.notebookOverlayUncropped;
 
       var reader = new FileReader();
       reader.onload = e => {
-        newImporting[index].worker.postMessage([e.target.result, notebookOverlay]);
+        newImporting[index].worker.postMessage([e.target.result, notebookOverlay, notebookOverlayUncropped]);
       }
       reader.readAsArrayBuffer(file);
     }
@@ -360,5 +354,16 @@ class Importer extends Component {
     canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(bitmap.data), bitmap.width, bitmap.height), 0, 0);
   }
 }
+
+async function loadImageData(url) {
+  const raw = await (await fetch(url)).blob();
+  const bitmap = await createImageBitmap(raw);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, 0, 0);
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+};
 
 export default Importer;
