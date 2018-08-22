@@ -25,7 +25,7 @@ class Overrider extends Component {
       transitioningOut: false,
       direction: 'right',
       corners: {},
-      pageType: 1,
+      pageType: 2,
       pageSize: 'LTR',
       pageOrientation: 'P',
       pageQRSize: 75,
@@ -43,6 +43,7 @@ class Overrider extends Component {
           this.state.pageQRSize = Number(split[3]);
           break;
         case 1:
+        case 2:
           this.state.pageType = type;
           this.state.pageNumber = Number(split[1]);
           break;
@@ -75,6 +76,7 @@ class Overrider extends Component {
                   <Select value={this.state.pageType} onChange={e=>{this.setState({pageType: e.target.value})}} style={{marginLeft: 12}}>
                     <MenuItem value={0}>Basic</MenuItem>
                     <MenuItem value={1}>Notebook</MenuItem>
+                    <MenuItem value={2}>Notebook (Uncropped)</MenuItem>
                   </Select>
 
                   {
@@ -97,7 +99,7 @@ class Overrider extends Component {
                   }
 
                   {
-                    this.state.pageType === 1?
+                    this.state.pageType === 1 || this.state.pageType === 2?
                       <TextField value={this.state.pageNumber} error={this.state.pageNumber === ''} onInput={(e)=>{this.setState({pageNumber: (()=>{
                         const num = Math.round(e.target.valueAsNumber);
                         if(num < 1) return 1;
@@ -137,6 +139,7 @@ class Overrider extends Component {
                   qrData += ` ${this.state.pageSize} ${this.state.pageOrientation} ${this.state.pageQRSize}`;
                   break;
                 case 1:
+                case 2:
                   qrData += ` ${this.state.pageNumber}`;
                   break;
                 default:
