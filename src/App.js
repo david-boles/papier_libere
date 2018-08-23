@@ -11,6 +11,9 @@ import Processor from './processing/Processor';
 import LandingPage from './LandingPage';
 import Settings from '@material-ui/icons/SettingsRounded';
 import IconButton from '@material-ui/core/IconButton'
+import Dialog from '@material-ui/core/Dialog';
+import Slide from '@material-ui/core/Slide';
+import Configurator from './configuring/Configurator';
 
 const fbConfig = {
   apiKey: "AIzaSyBffehKyH0dD4IYmNF-oGbaXx3mjEKXC0g",
@@ -44,12 +47,15 @@ class App extends Component {
     super(props);
     this.state = {
       current: null,
-      next: null
-      //auth: undefined, false, 'error', or object (actually logged in)
+      next: null,
+      configuring: false,
+      actions: (()=>{const out = []; for(var i = 0; i < 18; i++){out.push({})}return out})()
+      //auth: undefined, false, or object (actually logged in)
     }
   }
 
   render() {
+    console.log(this.state.auth);
     return (
       <MuiThemeProvider theme={theme}>
         <CssBaseline />
@@ -58,35 +64,49 @@ class App extends Component {
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
               Papier Libéré
               <Typography variant='subheading' style={{display: 'inline', color: 'inherit', marginLeft: 8}}>
-                v0.1.1
+                v0.1.2
               </Typography>
             </Typography>
             {
               this.state.auth?
-                <IconButton color='inherit' style={{marginRight: 12}}>
+                <IconButton color='inherit' style={{marginRight: 12}} onClick={()=>{this.setState({configuring: true})}}>
                   <Settings/>
                 </IconButton>
               : null
             }
             {
-              this.state.auth === false || this.state.auth === 'error'?
-                <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogIn()}}>
-                  {this.state.auth === 'error' ? 'try again' : 'log in'}
+              this.state.auth === undefined?
+                <Button disabled variant='outlined' style={{color: '#ccc', borderColor: '#ccc'}} onClick={()=>{this.initiateLogOut()}}>
+                  loading
                 </Button>
-              : 
+              :
                 this.state.auth?
                   <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogOut()}}>
                     log out
                   </Button>
-                : null
+                :
+                  <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogIn()}}>
+                    'log in'
+                  </Button>
             }  
           </Toolbar>
         </AppBar>
+
         <Fade in={!this.state.next} timeout={fadeTimeout}>
           <div style={{marginTop: 48}}>
             {this.state.current}
           </div>
         </Fade>
+
+        <Dialog
+          fullScreen
+          open={this.state.configuring}
+          onClose={()=>{this.setState({configuring: false})}}
+          TransitionComponent={Slide}
+          TransitionProps={{direction: 'up'}}
+        >
+          <Configurator app={this} onClose={()=>{this.setState({configuring: false})}}/>
+        </Dialog>
       </MuiThemeProvider>
     );
   }
@@ -131,7 +151,7 @@ class App extends Component {
       // var user = result.user;
       // // ...
     }).catch((error) => {
-      this.setState({auth: 'error'});
+      this.setState({auth: false});
     });
   }
 
