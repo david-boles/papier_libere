@@ -9,9 +9,9 @@ PDFDocument.prototype.addSVG = function(svg, x, y, options) {
 const PPI = 72;
 
 //CONFIG
-const name = 'Papier Libéré';
-const contactInfo = 'www.papierlibere.com';
-const pageStart = 101;//What page index to start on, should be odd.
+const name = 'Elisa Boles';
+const contactInfo = 'elisalboles@gmail.com';
+const pageStart = 1;//What page index to start on, should be odd.
 const pageCount = 100;//Should be even (actual sheets of paper is half this).
 const textColor = '#bfbfbf';
 const leftBindingTemplate = fs.readFileSync('./assets/page-dotted-left_binding.svg').toString();
@@ -20,7 +20,7 @@ const cardScanTemplate = fs.readFileSync('./assets/card_scan.svg').toString();
 
 //GENERATE
 const pages = new PDFDocument({autoFirstPage: false});
-pages.pipe(fs.createWriteStream(`./notebook_pages-uncropped-${pageStart}-${pageStart+pageCount-1}.pdf`));
+pages.pipe(fs.createWriteStream(`/home/deb/Temp/elisa-notebook_pages-uncropped-${pageStart}-${pageStart+pageCount-1}.pdf`));
 pages.fontSize(PPI/3);
 firstPage();
 for(var i = pageStart; i < pageStart+pageCount; i++) {

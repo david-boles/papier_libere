@@ -49,7 +49,7 @@ class App extends Component {
       current: null,
       next: null,
       configuring: false,
-      actions: (()=>{const out = []; for(var i = 0; i < 18; i++){out.push({})}return out})()
+      actions: (()=>{const out = []; for(var i = 0; i < 18; i++) out.push({type: 'none'}); return out})()
       //auth: undefined, false, or object (actually logged in)
     }
   }

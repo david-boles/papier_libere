@@ -148,6 +148,7 @@ onmessage = (e) => {
         console.log(err)
 
       }else {
+        postMessage(['done', srcImage.bitmap]); this.close(); return;//TODO remove
         postMessage(['source_bitmap', srcImage.bitmap]);
         postMessage(['progress', 10, 'Reading QR code...']);
         const qr = readQR(srcImage);
@@ -673,7 +674,7 @@ function getJimpPixelIndex(x, y, image, clampXY = true) {
 }
 
 function debugDisplay(image) {
-  if(false) {
+  if(true) {
     this.postMessage(['debug', image.bitmap]);
   }
 }

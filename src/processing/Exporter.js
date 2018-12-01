@@ -19,38 +19,21 @@ import Warning from '@material-ui/icons/Warning';
 import React, { Component } from 'react';
 import actionIcons from '../actionIcons';
 import Overrider from './Overrider';
-import Exporter from './Exporter';
 
-class Importer extends Component {
+class Exporter extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      dragEntered: false,
-      importing: [],
-      overriding: false,
-      overrider: '',
-      deleting: false
+      exporting: []
     }
-
-    this.notebookOverlay = loadImageData('/assets/notebook_overlay.png');
-    this.notebookOverlayUncropped = loadImageData('/assets/notebook_overlay-uncropped.png');
   }
 
   render() {
     return (
       <div style={{padding: 20, height: 'calc(100vh - 48px)', overflowY: 'auto'}}>
-        <input type='file' id='file_selector' multiple accept='image/*' style={{display: 'none'}} onChange={(e)=>{this.handleSelect(e.target.files); e.target.value = ''}}/>
-
         <Grid container direction='column' justify='flex-start' alignItems='center' spacing={40}>
-          <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
-            <div style={{ width: '100vw', maxWidth: '100%', borderStyle: this.state.dragEntered? 'solid' : 'dashed', textAlign: 'center', paddingTop: 48, paddingBottom: 48}} onDragEnter={e=>{e.stopPropagation();e.preventDefault();this.setState({dragEntered: true})}} onDragOver={e=>{e.stopPropagation();e.preventDefault();}} onDrop={e=>{e.stopPropagation();e.preventDefault();this.handleSelect(e.dataTransfer.files); this.setState({dragEntered: false})}} onDragLeave={e=>{this.setState({dragEntered: false})}} onDragEnd={e=>{this.setState({dragEntered: false})}}>
-              <Button variant='outlined' color='primary' component='label' htmlFor='file_selector'>
-                select photos
-              </Button>
-            </div>
-          </Grid>
 
-          {this.state.importing.map((imgImport, index) => {
+          {/* {this.state.importing.map((imgImport, index) => {
             if(imgImport) return (
               <Grid item xs={10} s={9} md={8} lg={7} xl={6} key={index}>
                 <Card square={true}>
@@ -156,156 +139,34 @@ class Importer extends Component {
               </Grid>
             );
             else return null;
-          })}
+          })} */}
 
-          <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
+          {/* <Grid item xs={10} s={9} md={8} lg={7} xl={6}>
             <div style={{paddingBottom: 48}}>
               <Button variant='raised' color='primary' disabled={this.state.importing.length === 0  || (()=>{
-                var allDone = true;
-                this.state.importing.forEach(imgImport => {
-                  allDone &= imgImport.progress === 'done'
-                })
-                if(!allDone) return true;
+                // var allDone = true;
+                // this.state.importing.forEach(imgImport => {
+                //   allDone &= imgImport.progress === 'done'
+                // })
+                // if(!allDone) return true;
 
-                const names = this.state.importing.map(imgImport => imgImport.name);
-                names.push('');//Also check for empty names
-                if(names.length !== new Set(names).size) return true;//Return false if duplicate names
+                // const names = this.state.importing.map(imgImport => imgImport.name);
+                // names.push('');//Also check for empty names
+                // if(names.length !== new Set(names).size) return true;//Return false if duplicate names
                 return false;
-              })()} onClick={()=>{
-                this.props.processor.setView(<Exporter processor={this.props.processor} imported={this.state.importing}/>)
-              }}>
-                export files
+              })()}>
+                
               </Button>
             </div>
-          </Grid>
+          </Grid> */}
         </Grid>
-
-        <Dialog
-          fullScreen
-          open={this.state.overriding}
-          onClose={()=>{this.handleOverrideClose()}}
-          TransitionComponent={Slide}
-          TransitionProps={{direction: 'up'}}
-        >
-          {this.state.overrider}
-        </Dialog>
-
-        <Dialog
-          // disableBackdropClick
-          // disableEscapeKeyDown
-          maxWidth="xs"
-          open={this.state.deleting !== false}
-        >
-          <DialogTitle>Are you sure you want to remove {this.state.deleting !== false? this.state.importing[this.state.deleting].name : ''}</DialogTitle>
-          <DialogActions>
-            <Button onClick={this.handleCancel} color='primary' onClick={()=>{this.setState({deleting: false})}}>
-              cancel
-            </Button>
-            <Button onClick={this.handleOk} variant='raised' color='secondary' onClick={()=>{
-              const importing = this.state.importing;
-              importing[this.state.deleting].worker.terminate();
-              importing[this.state.deleting] = false;
-              this.setState({importing: importing, deleting: false});
-            }}>
-              remove
-            </Button>
-          </DialogActions>
-        </Dialog>
       </div>
     );
   }
 
-  async handleSelect(files) {
-    const newImporting = this.state.importing.slice();
-
-    for(var i = 0; i < files.length; i++) {
-      const file = files.item(i);
-
-      const index = newImporting.push({
-        fileName: file.name,
-        name: file.name.split('.')[0],
-        actions: (()=>{const out = []; for(var i = 0; i < 18; i++) out.push(false); return out;})(),
-        progress: 'indeterminate',
-        progressTooltip: 'Loading...',
-        worker: new Worker('/import_worker.js')
-      }) - 1;
-
-      newImporting[index].worker.onmessage = this.getWorkerHandler(index);
-
-      const notebookOverlay = await this.notebookOverlay;
-      const notebookOverlayUncropped = await this.notebookOverlayUncropped;
-
-      var reader = new FileReader();
-      reader.onload = e => {
-        newImporting[index].worker.postMessage([e.target.result, notebookOverlay, notebookOverlayUncropped]);
-      }
-      reader.readAsArrayBuffer(file);
-    }
-
-    this.setState({importing: newImporting});
-  }
-
-  getWorkerHandler(index) {
-    return e => {
-      const importing = this.state.importing;
-
-      switch(e.data[0]) {
-        case 'progress':
-          importing[index].progress = e.data[1];
-          importing[index].progressTooltip = e.data[2];
-          this.setState({importing: importing});
-          break;
-
-        case 'source_bitmap':
-          importing[index].sourceBitmap = e.data[1];
-          this.setState({importing: importing});
-          this.displayBitmap(index, e.data[1]);
-          break;
-
-        case 'qr_data':
-          importing[index].qrData = e.data[1];
-          this.setState({importing: importing});
-          console.log(e.data[1])
-          break;
-
-        case 'corners':
-          importing[index].corners = e.data[1];
-          this.setState({importing: importing});
-          console.log(e.data[1])
-          break;
-
-        case 'actions':
-          console.log(e.data[1]);
-          for(var i = 0; i < importing[index].actions.length; i++) {
-            importing[index].actions[i] = importing[index].actions[i] || e.data[1][i];
-          }
-          break;
-
-        case 'done':
-          importing[index].finalBitmap = e.data[1];
-          importing[index].progress = 'done';
-          importing[index].progressTooltip = 'Importing complete!';
-          this.setState({importing: importing});
-          this.displayBitmap(index, e.data[1]);
-          break;
-
-        case 'debug':
-          this.displayBitmap(index, e.data[1]);
-          break;
-
-        default:
-          console.error('unhandled message from worker', e.data);
-      }
-    };
-  }
-
-  handleOverrideClose() {
-    this.setState({overriding: false});
-  }
-
   componentWillUnmount() {
-    this.state.importing.forEach(imgImport => {
-      imgImport.worker.terminate();
+    this.state.exporting.forEach(imgExport => {
+      imgExport.worker.terminate();
     });
   }
 
@@ -318,15 +179,4 @@ class Importer extends Component {
   }
 }
 
-async function loadImageData(url) {
-  const raw = await (await fetch(url)).blob();
-  const bitmap = await createImageBitmap(raw);
-  const canvas = document.createElement('canvas');
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(bitmap, 0, 0);
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
-};
-
-export default Importer;
+export default Exporter;
