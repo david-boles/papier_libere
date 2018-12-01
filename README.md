@@ -1,5 +1,5 @@
 # About
-Having toyed around with computer vision in the past and being frustrated with the price and writing experience of existing "smart paper" ecosystems, I decided to develop my own. Currently under the working title of Papier Libéré ("paper, freed" in French), it's still very much still in a prototype state, both in terms of features and code quality, but the site and image importing process is functional!
+Having toyed around with computer vision in the past and being frustrated with the price and writing experience of existing "smart paper" ecosystems, I decided to develop my own. Currently under the working title of Papier Libéré ("paper, freed" in French), it's still very much still in a prototype state, both in terms of features and code quality, but the site and image importing process is functional, __check out the gallery below__!
 
 # Features
 - Completely open source!
