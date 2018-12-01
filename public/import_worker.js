@@ -187,7 +187,7 @@ function continueProcessing(srcImage, qrData, corners, notebookOverlay, notebook
   postMessage(['progress', 65, 'Correcting white balance...']);
   image = correctWhiteBalance(image, qrData);
 
-  if(qrData.indexOf('1 ') === 0 || qrData.indexOf('2 ' === 0)) {
+  if(qrData.indexOf('1 ') === 0 || qrData.indexOf('2 ') === 0) {
     postMessage(['progress', 90, 'Detecting actions...']);
     postMessage(['actions', detectActions(image, qrData)]);
   }
@@ -541,7 +541,7 @@ function detectActions(image, qrData) {
       gridConfig = config[type].actions;
       break;
     default:
-      throw 'invalid page type for white balance';
+      throw 'invalid page type for detecting actions';
   }
 
   const output = [];

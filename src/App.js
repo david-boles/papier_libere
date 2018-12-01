@@ -64,7 +64,7 @@ class App extends Component {
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
               Papier Libéré
               <Typography variant='subheading' style={{display: 'inline', color: 'inherit', marginLeft: 8}}>
-                v0.1.2
+                v0.1.3
               </Typography>
             </Typography>
             {
@@ -86,7 +86,7 @@ class App extends Component {
                   </Button>
                 :
                   <Button variant='outlined' style={{color: 'white', borderColor: 'white'}} onClick={()=>{this.initiateLogIn()}}>
-                    'log in'
+                    log in
                   </Button>
             }  
           </Toolbar>
