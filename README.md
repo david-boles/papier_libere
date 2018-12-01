@@ -12,8 +12,9 @@ Having toyed around with computer vision in the past and being frustrated with t
 - QR codes and markable icons are regenerated after a scan so that you can print out documents later, edit them, and then re-scan and re-categorize them with ease.
 
 # Demo
+To reproduce the second image in the gallery below, follow these steps!
 1. Go to [the site](https://www.papierlibere.com/) and log in with a Google account.
-2. Download [this photo](https://raw.githubusercontent.com/david476/papier_libere/master/demo/IMG_20181201_014619.jpg) and select it (shown below).
+2. Download [this photo](https://raw.githubusercontent.com/david476/papier_libere/master/demo/IMG_20181201_014619.jpg) and select it.
 3. Wait for the importing process to finish (it can take a few seconds to load the image and find the QR code before it proceeds). Once complete, the scan is shown and any marked icons are indicated. The detected scan parameters (e.g. format and page corners) can be adjusted in the "Override" menu (currently works best on desktop), and the marked icons can be manually set if needed.
 4. Currently, scans can be downloaded from most browsers by right-clicking on the image. Easy downloading, exporting, and multipage-merging are in the works!
 
