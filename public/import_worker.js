@@ -565,7 +565,7 @@ function detectActions(image, qrData) {
         }
       }
 
-      if(distSum/pxCounter > 35) output.push(true);
+      if(distSum/pxCounter > 45) output.push(true);
       else output.push(false);
     }
   }
