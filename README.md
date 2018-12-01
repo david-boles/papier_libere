@@ -2,8 +2,8 @@
 Having toyed around with computer vision in the past and being frustrated with the price and writing experience of existing "smart paper" ecosystems, I decided to develop my own. Currently under the working title of Papier Libéré ("paper, freed" in French), it's still very much still in a prototype state, both in terms of features and code quality, but the site and image importing process is functional, __check out the gallery below__!
 
 # Features
-- Completely open source!
-- All image processing happens locally in a web worker. Google's Firebase is currently used for authentication and eventually cloud storage solutions will be supported as destinations for exporting scans.
+- Completely open source! Libraries (API clients at least) too!
+- All image processing happens locally in a web worker to keep the React UI snappy. Google's Firebase is currently used for authentication and eventually cloud storage solutions will be supported as destinations for exporting scans.
 - Works great on mobile! (internet is currently required despite caching)
 - New document formats can be quite easily added.
 - Bicubic adaptive white balance adjusts for partial shading of the scan but preserves colors.
