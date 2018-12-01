@@ -64,7 +64,7 @@ class App extends Component {
             <Typography variant="title" color="inherit" style={{flexGrow: 1}}>
               Papier Libéré
               <Typography variant='subheading' style={{display: 'inline', color: 'inherit', marginLeft: 8}}>
-                v0.1.3
+                v0.1.4
               </Typography>
             </Typography>
             {
